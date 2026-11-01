@@ -50,13 +50,15 @@ const MyTasksView = () => {
           return false;
         }
 
-        // Status filter
+        // Status filter (Pending, Completed, Overdue, Postponed)
         if (selectedStatus !== 'All') {
           const taskOverdue = isOverdue(task.deadline, task.status);
           if (selectedStatus === 'Overdue') {
-            if (!taskOverdue) return false;
+            if (!taskOverdue || task.status === 'Completed') return false;
           } else if (selectedStatus === 'Completed') {
             if (task.status !== 'Completed') return false;
+          } else if (selectedStatus === 'Postponed') {
+            if (!task.postponedCount || task.postponedCount <= 0) return false;
           } else if (selectedStatus === 'In Progress') {
             if (task.status !== 'In Progress') return false;
           } else if (selectedStatus === 'Pending') {
@@ -137,6 +139,7 @@ const MyTasksView = () => {
               <option value="In Progress">In Progress</option>
               <option value="Completed">Completed</option>
               <option value="Overdue">Overdue</option>
+              <option value="Postponed">Postponed</option>
             </select>
 
             {/* Importance Dropdown */}

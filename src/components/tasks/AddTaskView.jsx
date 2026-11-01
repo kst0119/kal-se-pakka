@@ -19,7 +19,7 @@ import Card from '../common/Card';
 import Button from '../common/Button';
 
 const AddTaskView = () => {
-  const { addTask, setActiveTab } = useTask();
+  const { addTask, setActiveTab, tasks } = useTask();
 
   // Helper to format ISO datetime for input (default tomorrow at 18:00)
   const getDefaultDeadline = () => {
@@ -60,18 +60,43 @@ const AddTaskView = () => {
 
   const validate = () => {
     const newErrors = {};
-    if (!formData.title.trim()) {
-      newErrors.title = 'Task title is required';
-    } else if (formData.title.trim().length < 3) {
+    const trimmedTitle = formData.title.trim();
+
+    // 1. Mandatory title validation & duplicate prevention
+    if (!trimmedTitle) {
+      newErrors.title = 'Task title is mandatory';
+    } else if (trimmedTitle.length < 3) {
       newErrors.title = 'Task title must be at least 3 characters';
+    } else {
+      const duplicate = tasks.find(
+        t => t.status !== 'Completed' && t.title.trim().toLowerCase() === trimmedTitle.toLowerCase()
+      );
+      if (duplicate) {
+        newErrors.title = 'A pending task with this title already exists. Please choose a distinct title.';
+      }
     }
 
+    // 2. Deadline validation
     if (!formData.deadline) {
-      newErrors.deadline = 'Please choose a deadline date and time';
+      newErrors.deadline = 'A valid deadline date and time is mandatory';
+    } else {
+      const parsedDate = new Date(formData.deadline);
+      if (isNaN(parsedDate.getTime())) {
+        newErrors.deadline = 'Invalid date and time format';
+      }
     }
 
-    if (!formData.duration || formData.duration <= 0) {
-      newErrors.duration = 'Estimated time must be greater than 0';
+    // 3. Importance validation
+    if (!['Low', 'Medium', 'High'].includes(formData.importance)) {
+      newErrors.importance = 'Please select a valid importance level';
+    }
+
+    // 4. Estimated effort validation
+    const durationNum = parseFloat(formData.duration);
+    if (isNaN(durationNum) || durationNum <= 0) {
+      newErrors.duration = 'Estimated effort must be greater than 0 hours';
+    } else if (durationNum > 40) {
+      newErrors.duration = 'Estimated effort cannot exceed 40 hours for a single task';
     }
 
     setErrors(newErrors);
@@ -94,9 +119,15 @@ const AddTaskView = () => {
       notes: formData.notes.trim(),
     };
 
-    addTask(newTask);
+    const result = addTask(newTask);
 
-    // Navigate to tasks view
+    if (!result.success) {
+      setErrors({ title: result.error });
+      setIsSubmitting(false);
+      return;
+    }
+
+    // Reset and navigate to tasks view
     setTimeout(() => {
       setIsSubmitting(false);
       setActiveTab('tasks');
@@ -151,11 +182,10 @@ const AddTaskView = () => {
                 setFormData({ ...formData, title: e.target.value });
                 if (errors.title) setErrors({ ...errors, title: null });
               }}
-              className={`w-full bg-slate-800/80 border rounded-xl px-4 py-3 text-sm text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 ${
-                errors.title
-                  ? 'border-rose-500/80 focus:ring-rose-500/50'
-                  : 'border-slate-700/80 focus:ring-indigo-500/50 focus:border-indigo-500/50'
-              }`}
+              className={`w-full bg-slate-800/80 border rounded-xl px-4 py-3 text-sm text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 ${errors.title
+                ? 'border-rose-500/80 focus:ring-rose-500/50'
+                : 'border-slate-700/80 focus:ring-indigo-500/50 focus:border-indigo-500/50'
+                }`}
             />
             {errors.title && (
               <p className="mt-1.5 text-xs text-rose-400 flex items-center gap-1">
@@ -194,11 +224,10 @@ const AddTaskView = () => {
                     key={cat.id}
                     type="button"
                     onClick={() => setFormData({ ...formData, category: cat.id })}
-                    className={`p-3 rounded-xl border text-left flex flex-col justify-between transition-all ${
-                      isSelected
-                        ? 'border-indigo-500 bg-indigo-500/15 text-white ring-1 ring-indigo-500/50'
-                        : 'border-slate-800 bg-slate-800/50 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
-                    }`}
+                    className={`p-3 rounded-xl border text-left flex flex-col justify-between transition-all ${isSelected
+                      ? 'border-indigo-500 bg-indigo-500/15 text-white ring-1 ring-indigo-500/50'
+                      : 'border-slate-800 bg-slate-800/50 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+                      }`}
                   >
                     <Icon className={`w-4 h-4 mb-2 ${isSelected ? 'text-indigo-400' : 'text-slate-400'}`} />
                     <div>
@@ -253,11 +282,10 @@ const AddTaskView = () => {
                   setFormData({ ...formData, deadline: e.target.value });
                   if (errors.deadline) setErrors({ ...errors, deadline: null });
                 }}
-                className={`w-full bg-slate-800/80 border rounded-xl px-4 py-2.5 text-sm text-slate-100 focus:outline-none focus:ring-2 ${
-                  errors.deadline
-                    ? 'border-rose-500/80 focus:ring-rose-500/50'
-                    : 'border-slate-700/80 focus:ring-indigo-500/50'
-                }`}
+                className={`w-full bg-slate-800/80 border rounded-xl px-4 py-2.5 text-sm text-slate-100 focus:outline-none focus:ring-2 ${errors.deadline
+                  ? 'border-rose-500/80 focus:ring-rose-500/50'
+                  : 'border-slate-700/80 focus:ring-indigo-500/50'
+                  }`}
               />
             </div>
             {errors.deadline && (
@@ -282,11 +310,10 @@ const AddTaskView = () => {
                     key={lvl.id}
                     type="button"
                     onClick={() => setFormData({ ...formData, importance: lvl.id })}
-                    className={`p-3.5 rounded-xl border text-left transition-all ${
-                      isSelected
-                        ? `${lvl.color} ring-1 ring-current`
-                        : 'border-slate-800 bg-slate-800/40 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
-                    }`}
+                    className={`p-3.5 rounded-xl border text-left transition-all ${isSelected
+                      ? `${lvl.color} ring-1 ring-current`
+                      : 'border-slate-800 bg-slate-800/40 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+                      }`}
                   >
                     <div className="flex items-center justify-between mb-1">
                       <span className="font-bold text-sm text-slate-200">{lvl.label} Priority</span>
@@ -316,11 +343,10 @@ const AddTaskView = () => {
                     setFormData({ ...formData, duration: parseFloat(e.target.value) || '' });
                     if (errors.duration) setErrors({ ...errors, duration: null });
                   }}
-                  className={`w-full bg-slate-800/80 border rounded-xl px-4 py-2.5 text-sm font-mono text-slate-100 focus:outline-none focus:ring-2 ${
-                    errors.duration
-                      ? 'border-rose-500/80 focus:ring-rose-500/50'
-                      : 'border-slate-700/80 focus:ring-indigo-500/50'
-                  }`}
+                  className={`w-full bg-slate-800/80 border rounded-xl px-4 py-2.5 text-sm font-mono text-slate-100 focus:outline-none focus:ring-2 ${errors.duration
+                    ? 'border-rose-500/80 focus:ring-rose-500/50'
+                    : 'border-slate-700/80 focus:ring-indigo-500/50'
+                    }`}
                 />
                 <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-slate-400">
                   hrs
@@ -335,11 +361,10 @@ const AddTaskView = () => {
                     key={preset}
                     type="button"
                     onClick={() => setFormData({ ...formData, duration: preset })}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-mono font-medium border transition-colors ${
-                      formData.duration === preset
-                        ? 'bg-indigo-600 border-indigo-500 text-white'
-                        : 'bg-slate-800/70 border-slate-700/70 text-slate-400 hover:text-slate-200'
-                    }`}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-mono font-medium border transition-colors ${formData.duration === preset
+                      ? 'bg-indigo-600 border-indigo-500 text-white'
+                      : 'bg-slate-800/70 border-slate-700/70 text-slate-400 hover:text-slate-200'
+                      }`}
                   >
                     {preset}h
                   </button>

@@ -1,11 +1,11 @@
 import React from 'react';
-import { Calendar, Clock, CheckCircle2, Circle, Trash2, Hourglass, Zap } from 'lucide-react';
+import { Calendar, Clock, CheckCircle2, Circle, Trash2, Hourglass, Zap, Edit3 } from 'lucide-react';
 import { CategoryBadge, ImportanceBadge, StatusBadge } from '../common/Badge';
 import { formatDate, getRelativeTimeDescription, isOverdue } from '../../utils/dateUtils';
 import { useTask } from '../../context/TaskContext';
 
 const TaskTable = ({ tasks }) => {
-  const { toggleTaskStatus, deleteTask, setPostponeModalTask } = useTask();
+  const { toggleTaskStatus, deleteTask, setPostponeModalTask, setEditModalTask } = useTask();
 
   return (
     <div className="overflow-x-auto rounded-2xl border border-slate-800 bg-slate-900/60 backdrop-blur-md">
@@ -117,6 +117,14 @@ const TaskTable = ({ tasks }) => {
                 {/* Actions */}
                 <td className="py-3.5 px-4 text-right whitespace-nowrap">
                   <div className="inline-flex items-center gap-1.5 justify-end">
+                    <button
+                      onClick={() => setEditModalTask(task)}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-300 hover:bg-slate-800 transition-colors"
+                      title="Edit Task Details"
+                    >
+                      <Edit3 className="w-4 h-4" />
+                    </button>
+
                     {!isCompleted && (
                       <button
                         onClick={() => setPostponeModalTask(task)}

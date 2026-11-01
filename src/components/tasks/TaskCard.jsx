@@ -1,12 +1,12 @@
 import React from 'react';
-import { Calendar, Clock, CheckCircle2, Circle, Trash2, Hourglass, AlertCircle, Zap } from 'lucide-react';
+import { Calendar, Clock, CheckCircle2, Circle, Trash2, Hourglass, AlertCircle, Zap, Edit3 } from 'lucide-react';
 import { CategoryBadge, ImportanceBadge, StatusBadge } from '../common/Badge';
 import { formatDate, getRelativeTimeDescription, isOverdue } from '../../utils/dateUtils';
 import Button from '../common/Button';
 import { useTask } from '../../context/TaskContext';
 
 const TaskCard = ({ task }) => {
-  const { toggleTaskStatus, deleteTask, setPostponeModalTask } = useTask();
+  const { toggleTaskStatus, deleteTask, setPostponeModalTask, setEditModalTask } = useTask();
   const isCompleted = task.status === 'Completed';
   const taskOverdue = isOverdue(task.deadline, task.status);
 
@@ -106,6 +106,14 @@ const TaskCard = ({ task }) => {
           </span>
 
           <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setEditModalTask(task)}
+              className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-300 hover:bg-slate-800 transition-colors"
+              title="Edit Task Details"
+            >
+              <Edit3 className="w-4 h-4" />
+            </button>
+
             {!isCompleted && (
               <button
                 onClick={() => setPostponeModalTask(task)}

@@ -234,6 +234,90 @@ assert(syncCheck.synchronized === true, 'Sync maintained after deleting task-b')
 assert(manager.hasTask('task-b') === false, 'task-b removed from Hash Map');
 assert(manager.getPendingCount() === 1, 'Max Heap size updated');
 
+// ---------------------------------------------------------------------------
+// TEST 9: Part 3 CRUD Operations, Form Validation & Duplicate Detection
+// ---------------------------------------------------------------------------
+console.log('\n9. Testing Part 3 Task CRUD Operations & Validation:');
+const crudManager = new TaskManager();
+
+// 1. Add Task
+const newTask = {
+  id: 'task-101',
+  title: 'Operating Systems Virtual Memory Lab',
+  category: 'Assignment',
+  deadline: '2026-11-03T18:00',
+  importance: 'High',
+  duration: 3.5,
+  status: 'Pending',
+};
+const added = crudManager.addTask(newTask);
+assert(crudManager.hasTask('task-101') === true, 'Task added to Hash Map');
+assert(crudManager.maxHeap.contains('task-101') === true, 'Task added to Max Heap');
+assert(added.priority > 0, `Priority computed on add (${added.priority})`);
+assert(crudManager.verifySynchronization().synchronized === true, 'Map and Heap synchronized after Add');
+
+// 2. Edit Task Details
+const edited = crudManager.updateTask('task-101', {
+  title: 'Operating Systems Page Replacement Lab (Modified)',
+  duration: 5.0, // increased effort -> higher priority
+  importance: 'High',
+});
+assert(edited.title === 'Operating Systems Page Replacement Lab (Modified)', 'Title updated in Hash Map');
+assert(edited.duration === 5.0, 'Duration updated in Hash Map');
+assert(crudManager.maxHeap.get('task-101').priority === edited.priority, 'Priority updated in Max Heap node');
+assert(crudManager.verifySynchronization().synchronized === true, 'Map and Heap synchronized after Edit');
+
+// 3. Mark Task Completed -> Heap Eviction
+crudManager.updateTask('task-101', { status: 'Completed' });
+assert(crudManager.hasTask('task-101') === true, 'Task remains in Hash Map after completion');
+assert(crudManager.maxHeap.contains('task-101') === false, 'Completed task strictly evicted from Max Heap');
+assert(crudManager.getHighestPriorityTask() === null, 'Max Heap is empty when only task is completed');
+assert(crudManager.verifySynchronization().synchronized === true, 'Map and Heap synchronized after Completion');
+
+// 4. Postpone Task -> Reopen & New Deadline
+crudManager.updateTask('task-101', { status: 'Pending', deadline: '2026-11-02T12:00', postponedCount: 1 });
+assert(crudManager.maxHeap.contains('task-101') === true, 'Postponed task re-enters Max Heap');
+assert(crudManager.getHighestPriorityTask().id === 'task-101', 'Task becomes root of heap again');
+assert(crudManager.verifySynchronization().synchronized === true, 'Map and Heap synchronized after Postponement');
+
+// 5. Delete Task -> Complete Purge
+crudManager.deleteTask('task-101');
+assert(crudManager.hasTask('task-101') === false, 'Task purged from Hash Map on delete');
+assert(crudManager.maxHeap.contains('task-101') === false, 'Task purged from Max Heap on delete');
+assert(crudManager.verifySynchronization().synchronized === true, 'Map and Heap synchronized after Delete');
+
+// ---------------------------------------------------------------------------
+// TEST 10: Part 3 Search & Filtering Operations
+// ---------------------------------------------------------------------------
+console.log('\n10. Testing Part 3 Search and Filtering Logic:');
+const testDataset = [
+  { id: 'f1', title: 'Binary Search Tree Balancing', category: 'Assignment', importance: 'High', status: 'Pending', deadline: '2026-11-02T18:00', postponedCount: 0 },
+  { id: 'f2', title: 'Graph Dijkstra Implementation', category: 'Project', importance: 'High', status: 'In Progress', deadline: '2026-11-04T18:00', postponedCount: 1 },
+  { id: 'f3', title: 'Calculus Series Quiz Revision', category: 'Exam', importance: 'Medium', status: 'Completed', deadline: '2026-10-31T18:00', postponedCount: 0 },
+  { id: 'f4', title: 'Resume Update for Placement', category: 'Personal', importance: 'Low', status: 'Pending', deadline: '2026-11-08T18:00', postponedCount: 2 },
+  { id: 'f5', title: 'Old Theory Homework 1', category: 'Assignment', importance: 'Medium', status: 'Overdue', deadline: '2026-10-25T18:00', postponedCount: 0 },
+];
+
+// Search filter
+const searchResults = testDataset.filter(t => t.title.toLowerCase().includes('dijkstra'));
+assert(searchResults.length === 1 && searchResults[0].id === 'f2', 'Search by title matches correctly');
+
+// Filter by Status: Completed
+const completedFilter = testDataset.filter(t => t.status === 'Completed');
+assert(completedFilter.length === 1 && completedFilter[0].id === 'f3', 'Filter by Completed status matches correctly');
+
+// Filter by Status: Postponed
+const postponedFilter = testDataset.filter(t => t.postponedCount && t.postponedCount > 0);
+assert(postponedFilter.length === 2, `Filter by Postponed matches tasks with delay count > 0 (found ${postponedFilter.length})`);
+
+// Filter by Category: Assignment
+const assignmentFilter = testDataset.filter(t => t.category === 'Assignment');
+assert(assignmentFilter.length === 2, 'Filter by Category matches Assignment tasks');
+
+// Filter by Importance: High
+const highImportanceFilter = testDataset.filter(t => t.importance === 'High');
+assert(highImportanceFilter.length === 2, 'Filter by Importance matches High priority tasks');
+
 console.log('\n======================================================');
 console.log(`  TEST RESULTS: ${passedTests} / ${totalTests} PASSED`);
 if (passedTests === totalTests) {

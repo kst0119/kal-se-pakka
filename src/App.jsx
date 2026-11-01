@@ -8,6 +8,7 @@ import AddTaskView from './components/tasks/AddTaskView';
 import ProductivityView from './components/productivity/ProductivityView';
 import TaskHistoryView from './components/history/TaskHistoryView';
 import PostponeModal from './components/common/PostponeModal';
+import EditTaskModal from './components/common/EditTaskModal';
 import Toast from './components/common/Toast';
 
 const MainLayout = () => {
@@ -57,6 +58,7 @@ const MainLayout = () => {
 
       {/* Modals & Floating Notifications */}
       <PostponeModal />
+      <EditTaskModal />
       <Toast />
     </div>
   );

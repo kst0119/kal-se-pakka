@@ -10,7 +10,7 @@ const STORAGE_KEY_TASKS = 'kal_se_pakka_tasks_v1';
 const STORAGE_KEY_HISTORY = 'kal_se_pakka_history_v1';
 
 export const TaskProvider = ({ children }) => {
-  // Navigation active tab
+  // Navigation active tab: 'dashboard' | 'tasks' | 'add-task' | 'productivity' | 'history'
   const [activeTab, setActiveTab] = useState('dashboard');
   
   // Search query (accessible globally from header/views)
@@ -19,8 +19,9 @@ export const TaskProvider = ({ children }) => {
   // Toast notification state
   const [toast, setToast] = useState(null);
 
-  // Postpone modal state
+  // Modals state
   const [postponeModalTask, setPostponeModalTask] = useState(null);
+  const [editModalTask, setEditModalTask] = useState(null);
 
   // Core DSA Coordinator: Encapsulates Hash Map and Custom Max Heap
   const taskManagerRef = useRef(new TaskManager());
@@ -38,7 +39,7 @@ export const TaskProvider = ({ children }) => {
     return INITIAL_TASKS;
   });
 
-  // History entries for completed & postponed tasks
+  // History entries for completed, postponed & deleted tasks
   const [history, setHistory] = useState(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY_HISTORY);
@@ -114,16 +115,39 @@ export const TaskProvider = ({ children }) => {
     }, 4000);
   };
 
-  // Add new task
+  /**
+   * Add a new task with duplicate prevention and validation.
+   * Calculates priority and synchronizes with DSA structures.
+   */
   const addTask = (newTaskData) => {
+    const trimmedTitle = newTaskData.title ? newTaskData.title.trim() : '';
+
+    if (!trimmedTitle) {
+      showToast('Task title is mandatory', 'warning');
+      return { success: false, error: 'Task title is mandatory.' };
+    }
+
+    // Duplicate check: Prevent active tasks with exact same title
+    const duplicate = tasks.find(
+      t => t.status !== 'Completed' && t.title.trim().toLowerCase() === trimmedTitle.toLowerCase()
+    );
+
+    if (duplicate) {
+      showToast(`A pending task with title "${trimmedTitle}" already exists!`, 'warning');
+      return { success: false, error: 'A pending task with this title already exists. Please choose a distinct title.' };
+    }
+
     const rawNewTask = {
       ...newTaskData,
       id: `task-${Date.now()}`,
-      status: 'Pending',
+      title: trimmedTitle,
+      status: newTaskData.status || 'Pending',
       createdAt: new Date().toISOString(),
+      postponedCount: 0,
+      duration: parseFloat(newTaskData.duration) || 1.0,
     };
 
-    // Calculate priority with DSA priorityCalculator
+    // Calculate priority with DSA priorityCalculator: (0.5*U + 0.3*I + 0.2*E)
     const priorityData = calculatePriorityScore(rawNewTask);
     const newTask = {
       ...rawNewTask,
@@ -131,18 +155,30 @@ export const TaskProvider = ({ children }) => {
       priorityData,
     };
 
-    // Add to state
+    // Update state
     setTasks(prev => [newTask, ...prev]);
-    showToast(`Task "${newTask.title}" added with Priority Score: ${newTask.priority}!`, 'success');
-    return newTask;
+    showToast(`Task "${newTask.title}" scheduled! (Priority Score: ${newTask.priority})`, 'success');
+    return { success: true, task: newTask };
   };
 
-  // Update existing task
+  /**
+   * Edit/Update an existing task.
+   * Recalculates priority score, updates Hash Map and Max Heap, and logs status transitions.
+   */
   const updateTask = (id, updatedFields) => {
+    let updatedTaskObj = null;
+
     setTasks(prev =>
       prev.map(task => {
         if (task.id === id) {
           const merged = { ...task, ...updatedFields };
+
+          if (updatedFields.title) {
+            merged.title = updatedFields.title.trim();
+          }
+          if (updatedFields.duration !== undefined) {
+            merged.duration = parseFloat(updatedFields.duration) || 1.0;
+          }
 
           // Recalculate priority score on updates
           const priorityData = calculatePriorityScore(merged);
@@ -152,7 +188,9 @@ export const TaskProvider = ({ children }) => {
             priorityData,
           };
 
-          // Check if completion status changed
+          updatedTaskObj = updated;
+
+          // Check if completion status changed to Completed
           if (updatedFields.status === 'Completed' && task.status !== 'Completed') {
             updated.completedAt = new Date().toISOString();
             setHistory(h => [
@@ -164,27 +202,56 @@ export const TaskProvider = ({ children }) => {
                 action: 'Completed',
                 timestamp: new Date().toISOString(),
                 importance: task.importance,
-                notes: task.notes || 'Marked as completed.'
+                notes: task.notes || 'Marked as completed.',
+                taskSnapshot: { ...task },
               },
               ...h
             ]);
           }
+
           return updated;
         }
         return task;
       })
     );
-    showToast('Task updated successfully', 'info');
+
+    showToast('Task updated successfully!', 'info');
+    return { success: true, task: updatedTaskObj };
   };
 
-  // Delete task
+  /**
+   * Delete a task:
+   * Removes from active task list and logs a 'Deleted' record into Task History.
+   */
   const deleteTask = (id) => {
     const taskToDelete = tasks.find(t => t.id === id);
+    if (!taskToDelete) return;
+
     setTasks(prev => prev.filter(t => t.id !== id));
-    showToast(`Deleted "${taskToDelete?.title || 'task'}"`, 'info');
+
+    // Maintain history of deleted tasks
+    setHistory(prev => [
+      {
+        id: `hist-${Date.now()}`,
+        taskId: taskToDelete.id,
+        title: taskToDelete.title,
+        category: taskToDelete.category,
+        action: 'Deleted',
+        timestamp: new Date().toISOString(),
+        importance: taskToDelete.importance,
+        notes: taskToDelete.description || 'Deleted by user',
+        taskSnapshot: { ...taskToDelete },
+      },
+      ...prev
+    ]);
+
+    showToast(`Deleted "${taskToDelete.title}" (Archived in History)`, 'info');
   };
 
-  // Toggle status between Completed and Pending
+  /**
+   * Toggle task status between Completed and Pending/Overdue.
+   * Enforces heap invariant: completed tasks are evicted from Max Heap.
+   */
   const toggleTaskStatus = (id) => {
     const target = tasks.find(t => t.id === id);
     if (!target) return;
@@ -192,14 +259,17 @@ export const TaskProvider = ({ children }) => {
     if (target.status === 'Completed') {
       const newStatus = isOverdue(target.deadline) ? 'Overdue' : 'Pending';
       updateTask(id, { status: newStatus, completedAt: null });
-      showToast(`Reopened "${target.title}" (Re-entered Max Heap Priority Queue)`, 'info');
+      showToast(`Reopened "${target.title}" (Re-entered Max Heap Queue)`, 'info');
     } else {
       updateTask(id, { status: 'Completed', completedAt: new Date().toISOString() });
       showToast(`Completed "${target.title}"! (Removed from Priority Queue) 🎉`, 'success');
     }
   };
 
-  // Postpone task
+  /**
+   * Postpone task:
+   * Changes deadline, increments postpone counter, recalculates priority, and logs audit record.
+   */
   const postponeTask = (id, newDeadline, reason = 'Rescheduled') => {
     const task = tasks.find(t => t.id === id);
     if (!task) return;
@@ -215,7 +285,7 @@ export const TaskProvider = ({ children }) => {
             deadline: newDeadline,
             status: 'Pending',
             postponedCount,
-            notes: reason ? `${t.notes ? t.notes + ' | ' : ''}Postponed: ${reason}` : t.notes
+            notes: reason ? `${t.notes ? t.notes + ' | ' : ''}Postponed: ${reason}` : t.notes,
           };
           const priorityData = calculatePriorityScore(updated);
           return {
@@ -241,6 +311,7 @@ export const TaskProvider = ({ children }) => {
         reason: reason,
         timestamp: new Date().toISOString(),
         importance: task.importance,
+        taskSnapshot: { ...task },
       },
       ...prev
     ]);
@@ -249,24 +320,35 @@ export const TaskProvider = ({ children }) => {
     setPostponeModalTask(null);
   };
 
-  // Restore history task back to pending
+  /**
+   * Restore a completed, postponed, or deleted task from history back to active pending tasks.
+   */
   const restoreTask = (historyItem) => {
     const existing = tasks.find(t => t.id === historyItem.taskId);
     if (existing) {
       updateTask(existing.id, { status: 'Pending' });
       showToast(`Restored "${existing.title}" to pending tasks.`, 'info');
     } else {
-      const restored = {
-        id: historyItem.taskId || `task-${Date.now()}`,
-        title: historyItem.title,
-        description: 'Restored from task history archive.',
-        category: historyItem.category || 'Other',
-        deadline: new Date(Date.now() + 86400000).toISOString().slice(0, 16),
-        importance: historyItem.importance || 'Medium',
-        duration: 1.5,
-        status: 'Pending',
-        createdAt: new Date().toISOString(),
-      };
+      const snapshot = historyItem.taskSnapshot;
+      const restored = snapshot
+        ? {
+            ...snapshot,
+            status: 'Pending',
+            completedAt: null,
+          }
+        : {
+            id: historyItem.taskId || `task-${Date.now()}`,
+            title: historyItem.title,
+            description: historyItem.notes || 'Restored from history archive.',
+            category: historyItem.category || 'Other',
+            deadline: new Date(Date.now() + 86400000).toISOString().slice(0, 16),
+            importance: historyItem.importance || 'Medium',
+            duration: 1.5,
+            status: 'Pending',
+            createdAt: new Date().toISOString(),
+            postponedCount: 0,
+          };
+
       const priorityData = calculatePriorityScore(restored);
       restored.priority = priorityData.priorityScore;
       restored.priorityData = priorityData;
@@ -289,7 +371,7 @@ export const TaskProvider = ({ children }) => {
 
   // Compute stats and recommendations using the Max Heap
   const stats = useMemo(() => {
-    // 1. Synchronize the TaskManager instance
+    // Synchronize TaskManager instance with current tasks
     const tm = new TaskManager();
     tm.setTasks(tasks);
 
@@ -297,6 +379,7 @@ export const TaskProvider = ({ children }) => {
     let pending = 0;
     let completed = 0;
     let overdue = 0;
+    let postponed = 0;
     const todayTasks = [];
 
     tasks.forEach(task => {
@@ -311,6 +394,10 @@ export const TaskProvider = ({ children }) => {
         pending++;
       }
 
+      if (task.postponedCount && task.postponedCount > 0) {
+        postponed++;
+      }
+
       if (isDueToday(task.deadline)) {
         todayTasks.push(task);
       }
@@ -318,7 +405,7 @@ export const TaskProvider = ({ children }) => {
 
     const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
 
-    // 2. Extract highest-priority task directly from Max Heap root (O(1) peek)
+    // Extract highest-priority task directly from Max Heap root (O(1) peek)
     const topHeapTask = tm.getHighestPriorityTask();
 
     let recommendationReason = '';
@@ -327,7 +414,6 @@ export const TaskProvider = ({ children }) => {
       recommendationReason = pd.reason || `Extracted by Max Heap root with Priority Score ${topHeapTask.priority}.`;
     }
 
-    // Verification check for synchronization
     const syncStatus = tm.verifySynchronization();
 
     return {
@@ -335,6 +421,7 @@ export const TaskProvider = ({ children }) => {
       pending,
       completed,
       overdue,
+      postponed,
       todayTasks,
       completionRate,
       recommendedTask: topHeapTask,
@@ -355,6 +442,8 @@ export const TaskProvider = ({ children }) => {
     showToast,
     postponeModalTask,
     setPostponeModalTask,
+    editModalTask,
+    setEditModalTask,
     addTask,
     updateTask,
     deleteTask,
