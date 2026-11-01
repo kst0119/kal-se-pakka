@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { TaskProvider, useTask } from './context/TaskContext';
+import AuthView from './components/auth/AuthView';
 import Sidebar from './components/layout/Sidebar';
 import Header from './components/layout/Header';
 import DashboardView from './components/dashboard/DashboardView';
@@ -64,13 +66,51 @@ const MainLayout = () => {
   );
 };
 
-function App() {
+const AppContent = () => {
+  const { user, loading } = useAuth();
+
+  // If restoring session or checking auth state, display a sleek loading splash
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-dark-900 text-slate-100 flex flex-col items-center justify-center p-4">
+        <div className="relative flex flex-col items-center">
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-sky-500 flex items-center justify-center shadow-xl shadow-indigo-600/30 text-white font-black text-3xl animate-bounce">
+            <span>⏳</span>
+          </div>
+          <div className="mt-6 flex items-center gap-2 text-white font-bold text-lg tracking-tight">
+            <span>KAL SE PAKKA</span>
+            <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">
+              DSA
+            </span>
+          </div>
+          <p className="text-xs text-slate-400 mt-2 flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-indigo-500 animate-ping" />
+            Verifying Supabase authentication session...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // If unauthenticated, display the full auth view (Login / Signup / Forgot Password)
+  if (!user) {
+    return <AuthView />;
+  }
+
+  // If authenticated, render the protected application dashboard & task system
   return (
     <TaskProvider>
       <MainLayout />
     </TaskProvider>
   );
+};
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
+  );
 }
 
 export default App;
-

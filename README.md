@@ -92,6 +92,7 @@ This project focuses on applying core Data Structures and Algorithms to real-wor
 | **Tailwind CSS** | Utility-first CSS framework for custom dark-theme SaaS design |
 | **Lucide React** | Consistent, modern icon set |
 | **Recharts (v3+)** | Interactive SVG charting library for productivity & delay telemetry |
+| **Supabase Client (`@supabase/supabase-js`)** | Persistent authentication & cloud backend service |
 | **Browser LocalStorage** | Client-side persistence for tasks and history logs across sessions |
 
 ---
@@ -166,6 +167,11 @@ Follow these steps to run the application locally on your computer:
 6. **Preview Production Build (Optional):**
    ```bash
    npm run preview
+   ```
+
+7. **Verify Supabase Connection:**
+   ```bash
+   node src/services/testConnection.js
    ```
 
 ---

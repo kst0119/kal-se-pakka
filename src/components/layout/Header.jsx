@@ -1,11 +1,21 @@
 import React from 'react';
-import { Menu, Plus, Calendar, Search, Sparkles } from 'lucide-react';
+import { Menu, Plus, Calendar, Search, LogOut } from 'lucide-react';
 import { useTask } from '../../context/TaskContext';
+import { useAuth } from '../../context/AuthContext';
 import { getTodayFormatted } from '../../utils/dateUtils';
 import Button from '../common/Button';
 
 const Header = ({ setIsMobileOpen }) => {
   const { activeTab, setActiveTab, searchQuery, setSearchQuery, stats } = useTask();
+  const { user, logout } = useAuth();
+
+  const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Student';
+  const initials = displayName
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0].toUpperCase())
+    .join('') || 'KP';
 
   const titles = {
     dashboard: {
@@ -94,6 +104,24 @@ const Header = ({ setIsMobileOpen }) => {
               Add Task
             </Button>
           )}
+
+          {/* User profile avatar & Quick Sign Out */}
+          <div className="flex items-center gap-1.5 pl-2 border-l border-slate-800/80">
+            <div
+              className="w-8 h-8 rounded-xl bg-gradient-to-tr from-purple-500 to-indigo-600 flex items-center justify-center font-bold text-white text-[11px] shadow-sm select-none"
+              title={`${displayName} • ${user?.email || 'Logged in'}`}
+            >
+              {initials}
+            </div>
+            <button
+              onClick={logout}
+              title="Sign out of Kal Se Pakka"
+              className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-slate-800 rounded-lg transition-colors"
+              aria-label="Sign out"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
     </header>

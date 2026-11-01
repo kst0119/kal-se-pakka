@@ -9,12 +9,25 @@ import {
   Sparkles,
   Code2,
   RotateCcw,
+  LogOut,
   X
 } from 'lucide-react';
 import { useTask } from '../../context/TaskContext';
+import { useAuth } from '../../context/AuthContext';
 
 const Sidebar = ({ isMobileOpen, setIsMobileOpen }) => {
   const { activeTab, setActiveTab, stats, resetToSampleData } = useTask();
+  const { user, logout } = useAuth();
+
+  const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'College Student';
+  const displayEmail = user?.email || 'Authenticated User';
+  
+  const initials = displayName
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0].toUpperCase())
+    .join('') || 'KP';
 
   const navItems = [
     {
@@ -178,18 +191,29 @@ const Sidebar = ({ isMobileOpen, setIsMobileOpen }) => {
           </div>
         </div>
 
-        {/* User preview */}
-        <div className="p-4 border-t border-slate-800/80 bg-slate-950/40 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-purple-500 to-indigo-600 flex items-center justify-center font-bold text-white text-xs ring-2 ring-purple-500/20">
-              AS
+        {/* Authenticated User Profile & Logout */}
+        <div className="p-4 border-t border-slate-800/80 bg-slate-950/40 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <div className="w-9 h-9 shrink-0 rounded-full bg-gradient-to-tr from-purple-500 to-indigo-600 flex items-center justify-center font-bold text-white text-xs ring-2 ring-purple-500/20 shadow-md">
+              {initials}
             </div>
-            <div className="truncate">
-              <div className="text-xs font-semibold text-slate-200 truncate">Aryan Sharma</div>
-              <div className="text-[11px] text-slate-400 truncate">CS & Engineering • Sem 5</div>
+            <div className="truncate min-w-0">
+              <div className="text-xs font-semibold text-slate-200 truncate" title={displayName}>
+                {displayName}
+              </div>
+              <div className="text-[11px] text-slate-400 truncate" title={displayEmail}>
+                {displayEmail}
+              </div>
             </div>
           </div>
-          <div className="w-2 h-2 rounded-full bg-emerald-400 ring-4 ring-emerald-500/20" title="Online" />
+          <button
+            onClick={logout}
+            title="Sign out of Kal Se Pakka"
+            className="p-2 rounded-xl text-slate-400 hover:text-red-400 hover:bg-slate-800 transition-colors shrink-0"
+            aria-label="Sign out"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
         </div>
       </aside>
     </>
