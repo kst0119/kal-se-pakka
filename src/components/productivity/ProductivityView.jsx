@@ -1,298 +1,436 @@
 import React from 'react';
 import {
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  BarChart,
+  Bar,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Legend,
+  CartesianGrid,
+} from 'recharts';
+import {
   TrendingUp,
   BarChart3,
-  Flame,
   Clock,
   CheckCircle2,
   AlertTriangle,
   Zap,
-  Code2,
-  Calendar,
   Layers,
-  ArrowUpRight,
+  Sparkles,
+  Smile,
+  Hourglass,
+  Calendar,
+  Inbox,
+  ArrowRight,
 } from 'lucide-react';
 import { useTask } from '../../context/TaskContext';
 import Card from '../common/Card';
+import Button from '../common/Button';
+import { formatDate } from '../../utils/dateUtils';
+
+const CustomTooltip = ({ active, payload, label }) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-slate-900/95 border border-slate-700/80 p-3 rounded-xl shadow-xl backdrop-blur-md text-xs space-y-1">
+        {label && <p className="font-bold text-slate-200 border-b border-slate-800 pb-1">{label}</p>}
+        {payload.map((entry, idx) => (
+          <p key={idx} className="flex items-center gap-2 font-mono" style={{ color: entry.color || entry.fill }}>
+            <span>{entry.name}:</span>
+            <span className="font-bold text-white">{entry.value}</span>
+          </p>
+        ))}
+      </div>
+    );
+  }
+  return null;
+};
 
 const ProductivityView = () => {
-  const { stats, tasks } = useTask();
+  const { stats, setActiveTab } = useTask();
 
-  // Weekly data mockup for placeholder chart
-  const weeklyData = [
-    { day: 'Mon', completed: 4, planned: 5, hours: 6.5 },
-    { day: 'Tue', completed: 3, planned: 3, hours: 4.0 },
-    { day: 'Wed', completed: 5, planned: 6, hours: 7.5 },
-    { day: 'Thu', completed: 2, planned: 4, hours: 3.5 },
-    { day: 'Fri', completed: 4, planned: 4, hours: 5.0 },
-    { day: 'Sat', completed: 1, planned: 3, hours: 2.0 },
-    { day: 'Sun', completed: 3, planned: 4, hours: 4.5 },
-  ];
+  const {
+    total,
+    completed,
+    pending,
+    overdue,
+    postponed,
+    completionRate,
+    procrastinationScore,
+    completedHours,
+    pendingHours,
+    humorMessage,
+    chartData,
+    recommendedTask,
+  } = stats;
 
-  // Category distribution calculation
-  const categoryCounts = tasks.reduce((acc, t) => {
-    acc[t.category] = (acc[t.category] || 0) + 1;
-    return acc;
-  }, {});
+  const { completedVsPending, category, weekly, trend } = chartData || {};
 
-  const total = tasks.length || 1;
+  // Procrastination Rating level
+  const getProcrastinationLevel = (score) => {
+    if (score >= 70) return { label: 'High Delay Alert', color: 'text-rose-400', badge: 'bg-rose-500/15 border-rose-500/30 text-rose-300' };
+    if (score >= 40) return { label: 'Moderate Procrastination', color: 'text-amber-400', badge: 'bg-amber-500/15 border-amber-500/30 text-amber-300' };
+    if (score > 0) return { label: 'Active Control', color: 'text-indigo-400', badge: 'bg-indigo-500/15 border-indigo-500/30 text-indigo-300' };
+    return { label: 'Procrastination Free', color: 'text-emerald-400', badge: 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300' };
+  };
 
-  const categoryBreakdown = Object.entries(categoryCounts).map(([cat, count]) => ({
-    name: cat,
-    count,
-    percent: Math.round((count / total) * 100),
-  }));
-
-  const maxWeekly = Math.max(...weeklyData.map(d => Math.max(d.completed, d.planned)));
+  const procLevel = getProcrastinationLevel(procrastinationScore);
 
   return (
     <div className="space-y-6">
-      {/* Top Banner */}
-      <div className="rounded-2xl bg-gradient-to-r from-slate-900 via-purple-950/40 to-slate-900 border border-slate-800 p-6 shadow-card">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-300 text-xs font-semibold mb-2">
-              <BarChart3 className="w-3.5 h-3.5" />
-              <span>Productivity Intelligence Hub</span>
-            </div>
-            <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-              Focus & Procrastination Telemetry
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-2xl">
-              Real-time analytics evaluating submission velocity, deadline buffer compliance, and task execution throughput.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <div className="px-4 py-2.5 rounded-xl bg-slate-800/80 border border-slate-700/80 text-center">
-              <div className="text-[10px] uppercase font-bold text-slate-400">Streak</div>
-              <div className="text-xl font-black text-amber-400 flex items-center justify-center gap-1">
-                <Flame className="w-4 h-4 fill-amber-400 text-amber-500" />
-                4 Days
+      {/* 1. Contextual Humour & Motivation Banner */}
+      {humorMessage && (
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-purple-950/40 via-indigo-950/40 to-slate-900 border border-purple-500/30 p-5 shadow-card">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex items-start gap-3">
+              <div className="p-2.5 rounded-xl bg-purple-500/20 text-purple-300 border border-purple-500/30 shrink-0 mt-0.5">
+                <Smile className="w-5 h-5 text-amber-400" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-purple-300">
+                    {humorMessage.title}
+                  </span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
+                    Procrastination Score: {procrastinationScore}/100
+                  </span>
+                </div>
+                <p className="text-sm font-semibold text-slate-100 italic">
+                  "{humorMessage.message}"
+                </p>
               </div>
             </div>
 
-            <div className="px-4 py-2.5 rounded-xl bg-slate-800/80 border border-slate-700/80 text-center">
-              <div className="text-[10px] uppercase font-bold text-slate-400">Adherence</div>
-              <div className="text-xl font-black text-emerald-400">
-                {stats.completionRate}%
-              </div>
-            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setActiveTab('tasks')}
+              className="shrink-0 self-end sm:self-auto"
+            >
+              Take Action
+            </Button>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* 4 Summary Mini Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* 2. Top Summary Metrics Grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
+        {/* Total Tasks */}
         <Card className="p-4">
-          <div className="flex items-center justify-between text-slate-400 text-xs font-semibold uppercase">
-            <span>Completed Rate</span>
+          <div className="flex items-center justify-between text-slate-400 text-[11px] font-semibold uppercase">
+            <span>Total Tasks</span>
+            <Layers className="w-4 h-4 text-indigo-400" />
+          </div>
+          <div className="mt-2 text-2xl font-black font-mono text-white">
+            {total}
+          </div>
+          <div className="text-[11px] text-slate-400 mt-0.5">
+            {totalEstimatedHours} hrs total
+          </div>
+        </Card>
+
+        {/* Completed Tasks */}
+        <Card className="p-4">
+          <div className="flex items-center justify-between text-slate-400 text-[11px] font-semibold uppercase">
+            <span>Completed</span>
             <CheckCircle2 className="w-4 h-4 text-emerald-400" />
           </div>
-          <div className="mt-2 text-2xl font-black font-mono text-white">
-            {stats.completionRate}%
+          <div className="mt-2 text-2xl font-black font-mono text-emerald-400">
+            {completed}
           </div>
-          <div className="mt-1 text-xs text-emerald-400 flex items-center gap-1">
-            <TrendingUp className="w-3 h-3" />
-            <span>+12% vs last week</span>
-          </div>
-        </Card>
-
-        <Card className="p-4">
-          <div className="flex items-center justify-between text-slate-400 text-xs font-semibold uppercase">
-            <span>Procrastination Score</span>
-            <AlertTriangle className="w-4 h-4 text-amber-400" />
-          </div>
-          <div className="mt-2 text-2xl font-black font-mono text-amber-300">
-            {stats.overdue > 0 ? 'Elevated' : 'Low'}
-          </div>
-          <div className="mt-1 text-xs text-slate-400">
-            {stats.overdue} slipped deadline{stats.overdue === 1 ? '' : 's'}
+          <div className="text-[11px] text-emerald-400/90 mt-0.5 font-medium">
+            {completionRate}% finished
           </div>
         </Card>
 
+        {/* Pending Tasks */}
         <Card className="p-4">
-          <div className="flex items-center justify-between text-slate-400 text-xs font-semibold uppercase">
-            <span>Total Study Hours</span>
+          <div className="flex items-center justify-between text-slate-400 text-[11px] font-semibold uppercase">
+            <span>Pending</span>
             <Clock className="w-4 h-4 text-indigo-400" />
           </div>
-          <div className="mt-2 text-2xl font-black font-mono text-white">
-            28.5 hrs
+          <div className="mt-2 text-2xl font-black font-mono text-indigo-300">
+            {pending}
           </div>
-          <div className="mt-1 text-xs text-indigo-400 flex items-center gap-1">
-            <span>Logged across 8 modules</span>
+          <div className="text-[11px] text-slate-400 mt-0.5">
+            {pendingHours} hrs in queue
           </div>
         </Card>
 
+        {/* Overdue Tasks */}
         <Card className="p-4">
-          <div className="flex items-center justify-between text-slate-400 text-xs font-semibold uppercase">
-            <span>Scheduler Efficiency</span>
+          <div className="flex items-center justify-between text-slate-400 text-[11px] font-semibold uppercase">
+            <span>Overdue</span>
+            <AlertTriangle className="w-4 h-4 text-rose-400" />
+          </div>
+          <div className="mt-2 text-2xl font-black font-mono text-rose-400">
+            {overdue}
+          </div>
+          <div className={`text-[11px] mt-0.5 ${overdue > 0 ? 'text-rose-400 font-semibold' : 'text-slate-400'}`}>
+            {overdue > 0 ? 'Urgent attention' : 'Zero slips'}
+          </div>
+        </Card>
+
+        {/* Postponed Tasks */}
+        <Card className="p-4">
+          <div className="flex items-center justify-between text-slate-400 text-[11px] font-semibold uppercase">
+            <span>Postponed</span>
+            <Hourglass className="w-4 h-4 text-amber-400" />
+          </div>
+          <div className="mt-2 text-2xl font-black font-mono text-amber-300">
+            {postponed}
+          </div>
+          <div className="text-[11px] text-slate-400 mt-0.5">
+            "Kal Se Pakka" calls
+          </div>
+        </Card>
+
+        {/* Procrastination Score */}
+        <Card className="p-4">
+          <div className="flex items-center justify-between text-slate-400 text-[11px] font-semibold uppercase">
+            <span>Procrastination</span>
             <Zap className="w-4 h-4 text-purple-400" />
           </div>
-          <div className="mt-2 text-2xl font-black font-mono text-white">
-            92.4%
+          <div className="mt-2 text-2xl font-black font-mono text-purple-300">
+            {procrastinationScore}
+            <span className="text-xs text-slate-400 font-normal">/100</span>
           </div>
-          <div className="mt-1 text-xs text-purple-400">
-            DSA Priority Engine v1
+          <div className={`text-[10px] mt-0.5 font-bold uppercase ${procLevel.color}`}>
+            {procLevel.label}
           </div>
         </Card>
       </div>
 
-      {/* Main Charts Placeholder Row */}
+      {/* 3. Next Recommended Task Highlight from Max Heap */}
+      {recommendedTask && (
+        <div className="p-5 rounded-2xl bg-gradient-to-r from-indigo-950/40 via-slate-900 to-purple-950/30 border border-indigo-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                Max Heap Top Priority
+              </span>
+              <span className="text-xs font-mono font-bold text-amber-400">
+                ⚡ Priority Score: {recommendedTask.priority?.toFixed(1) || '0.0'}
+              </span>
+            </div>
+            <h4 className="text-base font-bold text-white">
+              {recommendedTask.title}
+            </h4>
+            <p className="text-xs text-slate-300">
+              Deadline: <span className="font-mono text-indigo-300">{formatDate(recommendedTask.deadline)}</span> • Estimated Effort: <span className="font-mono text-purple-300">{recommendedTask.duration} hrs</span>
+            </p>
+          </div>
+
+          <Button
+            variant="primary"
+            size="sm"
+            icon={ArrowRight}
+            iconPosition="right"
+            onClick={() => setActiveTab('dashboard')}
+            className="shrink-0"
+          >
+            Open in Dashboard
+          </Button>
+        </div>
+      )}
+
+      {/* 4. Charts Row 1: Completed vs Pending (Pie) & Tasks by Category (Bar) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Weekly Completion Bar Chart Placeholder */}
-        <div className="lg:col-span-8">
+        {/* Chart 1: Completed vs Pending Distribution */}
+        <div className="lg:col-span-5">
           <Card className="h-full flex flex-col justify-between">
             <div>
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-800 mb-6 gap-2">
-                <div>
-                  <h3 className="font-bold text-white text-base">Weekly Task Throughput (Placeholder)</h3>
-                  <p className="text-xs text-slate-400">Planned vs Completed Tasks per day</p>
-                </div>
-
-                <div className="flex items-center gap-4 text-xs">
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-indigo-500" />
-                    <span className="text-slate-300">Planned</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-purple-500" />
-                    <span className="text-slate-300">Completed</span>
-                  </div>
-                </div>
+              <div className="pb-3 border-b border-slate-800 mb-4">
+                <h3 className="font-bold text-white text-base">Task Status Breakdown</h3>
+                <p className="text-xs text-slate-400">Completed vs Pending vs Overdue</p>
               </div>
 
-              {/* Bar Chart Visualization */}
-              <div className="h-64 flex items-end justify-between gap-3 sm:gap-6 pt-6 px-2">
-                {weeklyData.map((d, i) => {
-                  const plannedHeight = (d.planned / maxWeekly) * 100;
-                  const completedHeight = (d.completed / maxWeekly) * 100;
-
-                  return (
-                    <div key={i} className="flex-1 flex flex-col items-center gap-2 h-full justify-end group">
-                      <div className="text-[10px] text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity font-mono">
-                        {d.completed}/{d.planned}
-                      </div>
-
-                      <div className="w-full flex items-end justify-center gap-1.5 h-44">
-                        {/* Planned bar */}
-                        <div
-                          style={{ height: `${plannedHeight}%` }}
-                          className="w-1/2 bg-slate-700/60 rounded-t-md transition-all duration-300 group-hover:bg-indigo-500/40"
-                          title={`Planned: ${d.planned}`}
-                        />
-                        {/* Completed bar */}
-                        <div
-                          style={{ height: `${completedHeight}%` }}
-                          className="w-1/2 bg-gradient-to-t from-indigo-600 to-purple-500 rounded-t-md transition-all duration-300 group-hover:brightness-110 shadow-sm"
-                          title={`Completed: ${d.completed}`}
-                        />
-                      </div>
-
-                      <span className="text-xs font-semibold text-slate-400 mt-1">
-                        {d.day}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
+              {completedVsPending && completedVsPending.length > 0 ? (
+                <div className="h-64 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={completedVsPending}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={55}
+                        outerRadius={85}
+                        paddingAngle={4}
+                        dataKey="value"
+                      >
+                        {completedVsPending.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip content={<CustomTooltip />} />
+                      <Legend
+                        verticalAlign="bottom"
+                        wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <div className="h-64 flex flex-col items-center justify-center text-center p-4">
+                  <Inbox className="w-10 h-10 text-slate-500 mb-2" />
+                  <p className="text-sm font-semibold text-slate-300">No task records</p>
+                  <p className="text-xs text-slate-500 mt-1 max-w-xs">
+                    Create tasks to generate real-time status telemetry.
+                  </p>
+                </div>
+              )}
             </div>
 
-            <div className="mt-6 pt-4 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
-              <span>Average 3.2 tasks completed per day</span>
-              <span className="text-indigo-400 font-medium">Chart visualization preview</span>
+            <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
+              <span>Completion Velocity: {completionRate}%</span>
+              <span className="text-indigo-400 font-medium">Live Recharts Pie</span>
             </div>
           </Card>
         </div>
 
-        {/* Category Breakdown & Allocation */}
-        <div className="lg:col-span-4">
+        {/* Chart 2: Tasks by Category */}
+        <div className="lg:col-span-7">
           <Card className="h-full flex flex-col justify-between">
             <div>
-              <div className="pb-4 border-b border-slate-800 mb-4">
-                <h3 className="font-bold text-white text-base">Category Distribution</h3>
-                <p className="text-xs text-slate-400">Active coursework distribution</p>
+              <div className="pb-3 border-b border-slate-800 mb-4 flex items-center justify-between">
+                <div>
+                  <h3 className="font-bold text-white text-base">Tasks by Academic Category</h3>
+                  <p className="text-xs text-slate-400">Completed vs Pending per domain</p>
+                </div>
+                <span className="text-xs font-mono text-slate-400">
+                  {category?.length || 0} active categories
+                </span>
               </div>
 
-              <div className="space-y-4">
-                {categoryBreakdown.map((item) => (
-                  <div key={item.name} className="space-y-1.5">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-medium text-slate-200">{item.name}</span>
-                      <span className="font-mono text-slate-400">{item.count} tasks ({item.percent}%)</span>
-                    </div>
-                    <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
-                      <div
-                        style={{ width: `${item.percent}%` }}
-                        className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-purple-500"
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
+              {category && category.length > 0 ? (
+                <div className="h-64 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={category} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#1E293B" vertical={false} />
+                      <XAxis dataKey="category" stroke="#64748B" fontSize={11} tickLine={false} />
+                      <YAxis stroke="#64748B" fontSize={11} allowDecimals={false} tickLine={false} />
+                      <Tooltip content={<CustomTooltip />} />
+                      <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '8px' }} />
+                      <Bar dataKey="completed" name="Completed" fill="#10B981" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="pending" name="Pending" fill="#6366F1" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="overdue" name="Overdue" fill="#F43F5E" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <div className="h-64 flex flex-col items-center justify-center text-center p-4">
+                  <Inbox className="w-10 h-10 text-slate-500 mb-2" />
+                  <p className="text-sm font-semibold text-slate-300">No category data</p>
+                  <p className="text-xs text-slate-500 mt-1 max-w-xs">
+                    Assign categories (Assignment, Project, Exam) to compare workload.
+                  </p>
+                </div>
+              )}
             </div>
 
-            <div className="mt-6 p-3.5 rounded-xl bg-slate-800/50 border border-slate-700/60 text-xs text-slate-300 space-y-1">
-              <div className="font-semibold text-white flex items-center gap-1.5">
-                <Layers className="w-3.5 h-3.5 text-indigo-400" />
-                Workload Balance
-              </div>
-              <p className="text-[11px] text-slate-400 leading-relaxed">
-                Assignments form the highest bulk of your schedule. Focus early morning blocks for heavy project work.
-              </p>
+            <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
+              <span>Categorical Distribution</span>
+              <span className="text-purple-400 font-medium">Recharts Grouped Bar</span>
             </div>
           </Card>
         </div>
       </div>
 
-      {/* College DSA Mini Project Architecture Placeholder Card */}
-      <div className="rounded-2xl bg-gradient-to-br from-indigo-950/40 via-slate-900 to-purple-950/30 border border-indigo-500/20 p-6">
-        <div className="flex items-start gap-4">
-          <div className="p-3 rounded-2xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/30 shrink-0">
-            <Code2 className="w-6 h-6" />
-          </div>
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <h3 className="text-base font-bold text-white">
-                Active DSA Engine & Algorithmic Architecture (Part 2 Live)
-              </h3>
-              <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                DSA Live
-              </span>
+      {/* 5. Charts Row 2: Weekly Productivity & Completion Trend */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Chart 3: Weekly Productivity (Last 7 Days) */}
+        <div className="lg:col-span-6">
+          <Card className="h-full flex flex-col justify-between">
+            <div>
+              <div className="pb-3 border-b border-slate-800 mb-4">
+                <h3 className="font-bold text-white text-base">Weekly Productivity (Past 7 Days)</h3>
+                <p className="text-xs text-slate-400">Planned deadlines vs Actual completed tasks</p>
+              </div>
+
+              {weekly && weekly.length > 0 ? (
+                <div className="h-64 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={weekly} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#1E293B" vertical={false} />
+                      <XAxis dataKey="day" stroke="#64748B" fontSize={11} tickLine={false} />
+                      <YAxis stroke="#64748B" fontSize={11} allowDecimals={false} tickLine={false} />
+                      <Tooltip content={<CustomTooltip />} />
+                      <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '8px' }} />
+                      <Bar dataKey="planned" name="Planned / Due" fill="#334155" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="completed" name="Completed" fill="#8B5CF6" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <div className="h-64 flex flex-col items-center justify-center text-center p-4">
+                  <Calendar className="w-10 h-10 text-slate-500 mb-2" />
+                  <p className="text-sm font-semibold text-slate-300">No weekly activity</p>
+                </div>
+              )}
             </div>
-            <p className="text-xs text-slate-300 leading-relaxed">
-              The application priority queue is now dynamically powered by our custom Data Structures & Algorithms implementation:
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2 text-xs">
-              <div className="p-3 rounded-xl bg-slate-900/80 border border-indigo-500/30">
-                <div className="font-semibold text-indigo-300 flex items-center justify-between">
-                  <span>1. Custom Max Heap</span>
-                  <span className="text-[10px] text-emerald-400 font-mono">Active</span>
-                </div>
-                <p className="text-[11px] text-slate-400 mt-1">
-                  Maintains complete binary tree with O(log N) insert/extract and O(1) peek for next-task extraction.
-                </p>
-              </div>
-              <div className="p-3 rounded-xl bg-slate-900/80 border border-purple-500/30">
-                <div className="font-semibold text-purple-300 flex items-center justify-between">
-                  <span>2. Priority Formula</span>
-                  <span className="text-[10px] text-emerald-400 font-mono">Active</span>
-                </div>
-                <p className="text-[11px] text-slate-400 mt-1">
-                  (0.5×Urgency) + (0.3×Importance) + (0.2×Effort) with all components normalized (0-100).
-                </p>
-              </div>
-              <div className="p-3 rounded-xl bg-slate-900/80 border border-sky-500/30">
-                <div className="font-semibold text-sky-300 flex items-center justify-between">
-                  <span>3. Hash Map Index</span>
-                  <span className="text-[10px] text-emerald-400 font-mono">Active</span>
-                </div>
-                <p className="text-[11px] text-slate-400 mt-1">
-                  JavaScript Map stores all tasks for O(1) lookup and stays strictly synchronized with the Max Heap.
-                </p>
-              </div>
+
+            <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
+              <span>7-Day Productivity Window</span>
+              <span className="text-indigo-400 font-medium">Recharts Bar</span>
             </div>
-          </div>
+          </Card>
+        </div>
+
+        {/* Chart 4: Task Completion Trend (Area) */}
+        <div className="lg:col-span-6">
+          <Card className="h-full flex flex-col justify-between">
+            <div>
+              <div className="pb-3 border-b border-slate-800 mb-4">
+                <h3 className="font-bold text-white text-base">Cumulative Completion Trend</h3>
+                <p className="text-xs text-slate-400">Growth of completed tasks over time</p>
+              </div>
+
+              {trend && trend.length > 0 ? (
+                <div className="h-64 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={trend} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                      <defs>
+                        <linearGradient id="trendGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                          <stop offset="5%" stopColor="#10B981" stopOpacity={0.4} />
+                          <stop offset="95%" stopColor="#10B981" stopOpacity={0.0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#1E293B" vertical={false} />
+                      <XAxis dataKey="label" stroke="#64748B" fontSize={11} tickLine={false} />
+                      <YAxis stroke="#64748B" fontSize={11} allowDecimals={false} tickLine={false} />
+                      <Tooltip content={<CustomTooltip />} />
+                      <Area
+                        type="monotone"
+                        dataKey="completions"
+                        name="Completed Tasks"
+                        stroke="#10B981"
+                        strokeWidth={2.5}
+                        fill="url(#trendGradient)"
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <div className="h-64 flex flex-col items-center justify-center text-center p-4">
+                  <Inbox className="w-10 h-10 text-slate-500 mb-2" />
+                  <p className="text-sm font-semibold text-slate-300">No completions yet</p>
+                  <p className="text-xs text-slate-500 mt-1 max-w-xs">
+                    Mark tasks completed to trace your upward progress velocity curve.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
+              <span>Velocity Curve</span>
+              <span className="text-emerald-400 font-medium">Recharts Area</span>
+            </div>
+          </Card>
         </div>
       </div>
     </div>
@@ -300,4 +438,3 @@ const ProductivityView = () => {
 };
 
 export default ProductivityView;
-

@@ -9,6 +9,7 @@ import {
   Layers,
   ArrowUpRight,
   TrendingUp,
+  Smile,
 } from 'lucide-react';
 import { useTask } from '../../context/TaskContext';
 import { getTodayFormatted } from '../../utils/dateUtils';
@@ -43,6 +44,12 @@ const DashboardView = () => {
                 <span>. You are on track with your deadlines today.</span>
               )}
             </p>
+            {stats.humorMessage && (
+              <p className="text-xs text-purple-300/90 italic pt-1 flex items-center gap-1.5">
+                <Smile className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <span>"{stats.humorMessage.message}"</span>
+              </p>
+            )}
           </div>
 
           <div className="flex items-center gap-3 shrink-0">

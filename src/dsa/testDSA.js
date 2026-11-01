@@ -18,6 +18,15 @@
 import { MaxHeap } from './MaxHeap.js';
 import { calculatePriorityScore, calculateUrgency, calculateImportance, calculateEffort } from './priorityCalculator.js';
 import { TaskManager } from './TaskManager.js';
+import {
+  calculateProcrastinationScore,
+  calculateProductivityStats,
+  getContextualHumorMessage,
+  getCompletedVsPendingChartData,
+  getCategoryChartData,
+  getWeeklyProductivityChartData,
+  getCompletionTrendChartData,
+} from '../utils/analyticsCalculator.js';
 
 let passedTests = 0;
 let totalTests = 0;
@@ -317,6 +326,74 @@ assert(assignmentFilter.length === 2, 'Filter by Category matches Assignment tas
 // Filter by Importance: High
 const highImportanceFilter = testDataset.filter(t => t.importance === 'High');
 assert(highImportanceFilter.length === 2, 'Filter by Importance matches High priority tasks');
+
+// ---------------------------------------------------------------------------
+// TEST 11: Part 4 Productivity Analytics & Procrastination Score Tests
+// ---------------------------------------------------------------------------
+console.log('\n11. Testing Part 4 Productivity Statistics & Procrastination Formula:');
+
+// Case A: Empty task list
+assert(calculateProcrastinationScore([]) === 0, 'Empty task list yields 0 procrastination score');
+const emptyStats = calculateProductivityStats([], []);
+assert(emptyStats.total === 0 && emptyStats.completed === 0 && emptyStats.completionRate === 0, 'Empty stats counters are zero');
+const emptyHumor = getContextualHumorMessage(emptyStats);
+assert(emptyHumor.tone === 'neutral', 'Empty task list receives neutral humor message');
+
+// Case B: All tasks completed
+const allCompletedTasks = [
+  { id: 'c1', title: 'Task 1', status: 'Completed', deadline: '2026-10-20T10:00' }, // Past deadline, but completed!
+  { id: 'c2', title: 'Task 2', status: 'Completed', deadline: '2026-10-25T10:00' },
+];
+assert(calculateProcrastinationScore(allCompletedTasks) === 0, 'All tasks completed yields 0 procrastination score (past deadlines not penalized)');
+const completedStats = calculateProductivityStats(allCompletedTasks, []);
+assert(completedStats.completionRate === 100, 'Completion rate is 100% when all tasks completed');
+const allCompletedHumor = getContextualHumorMessage(completedStats);
+assert(allCompletedHumor.tone === 'celebrate', 'All completed tasks triggers celebratory humor message');
+
+// Case C: All active tasks overdue
+const allOverdueTasks = [
+  { id: 'o1', title: 'Overdue 1', status: 'Pending', deadline: '2026-10-25T10:00', duration: 2 },
+  { id: 'o2', title: 'Overdue 2', status: 'Pending', deadline: '2026-10-26T10:00', duration: 3 },
+];
+const allOverdueScore = calculateProcrastinationScore(allOverdueTasks);
+assert(allOverdueScore >= 60, `All overdue tasks produces high procrastination score (got ${allOverdueScore})`);
+const overdueStats = calculateProductivityStats(allOverdueTasks, []);
+assert(overdueStats.overdue === 2, 'Detects both tasks as overdue');
+const overdueHumor = getContextualHumorMessage(overdueStats);
+assert(overdueHumor.tone === 'warning' || overdueHumor.tone === 'critical', 'Overdue tasks triggers warning/critical humor');
+
+// Case D: Mixed task statuses
+const mixedTasks = [
+  { id: 'm1', title: 'Mixed 1', status: 'Completed', deadline: '2026-10-30T10:00', duration: 2 },
+  { id: 'm2', title: 'Mixed 2', status: 'Pending', deadline: '2026-11-05T10:00', duration: 2 }, // Future
+  { id: 'm3', title: 'Mixed 3', status: 'Pending', deadline: '2026-10-28T10:00', duration: 2 }, // Overdue
+];
+const mixedScore = calculateProcrastinationScore(mixedTasks);
+assert(mixedScore > 0 && mixedScore < 100, `Mixed tasks produces bounded intermediate score (got ${mixedScore})`);
+
+// Case E: Postponed tasks impact
+const baseTasks = [
+  { id: 'p1', title: 'Base 1', status: 'Pending', deadline: '2026-11-05T10:00', duration: 2, postponedCount: 0 },
+];
+const postponedTasks = [
+  { id: 'p1', title: 'Base 1', status: 'Pending', deadline: '2026-11-05T10:00', duration: 2, postponedCount: 3 },
+];
+const baseScore = calculateProcrastinationScore(baseTasks);
+const postScore = calculateProcrastinationScore(postponedTasks);
+assert(postScore > baseScore, `Postponing tasks increases procrastination score (${baseScore} -> ${postScore})`);
+
+// Case F: Changing task deadlines impact on score
+const deadlineTask = [{ id: 'd1', title: 'Deadline Test', status: 'Pending', deadline: '2026-11-10T10:00', duration: 2 }];
+const beforeDeadlineScore = calculateProcrastinationScore(deadlineTask);
+deadlineTask[0].deadline = '2026-10-20T10:00'; // Change to past (overdue)
+const afterDeadlineScore = calculateProcrastinationScore(deadlineTask);
+assert(afterDeadlineScore > beforeDeadlineScore, `Changing deadline to past increases procrastination score (${beforeDeadlineScore} -> ${afterDeadlineScore})`);
+
+// Case G: Chart data transformers safety
+assert(getCompletedVsPendingChartData([]).length === 0, 'Chart transformer handles empty dataset safely');
+assert(getCategoryChartData([]).length === 0, 'Category transformer handles empty dataset safely');
+assert(getWeeklyProductivityChartData([], []).length === 7, 'Weekly productivity generates exactly 7 day buckets');
+assert(getCompletionTrendChartData([], []).length === 0, 'Trend transformer handles empty dataset safely');
 
 console.log('\n======================================================');
 console.log(`  TEST RESULTS: ${passedTests} / ${totalTests} PASSED`);

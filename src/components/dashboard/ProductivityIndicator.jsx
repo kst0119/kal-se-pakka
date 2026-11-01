@@ -11,21 +11,25 @@ const ProductivityIndicator = () => {
   const pendingTasks = stats.pending;
   const overdueTasks = stats.overdue;
   const completionRate = stats.completionRate;
+  const procrastinationScore = stats.procrastinationScore || 0;
+  const humorMessage = stats.humorMessage;
 
   // Calculate total pending hours
-  const pendingHours = tasks
-    .filter(t => t.status !== 'Completed')
-    .reduce((acc, curr) => acc + (Number(curr.duration) || 0), 0);
+  const pendingHours = stats.pendingHours !== undefined
+    ? stats.pendingHours
+    : tasks
+        .filter(t => t.status !== 'Completed')
+        .reduce((acc, curr) => acc + (Number(curr.duration) || 0), 0);
 
   // SVG circular progress calculation
   const radius = 42;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (completionRate / 100) * circumference;
 
-  // Procrastination evaluation label
+  // Procrastination evaluation label from real formula
   const getProcrastinationRating = () => {
-    if (overdueTasks > 2) return { label: 'High Delay Risk', color: 'text-rose-400', bar: 'bg-rose-500' };
-    if (overdueTasks === 1) return { label: 'Moderate Slip', color: 'text-amber-400', bar: 'bg-amber-500' };
+    if (procrastinationScore >= 70) return { label: 'High Delay Risk', color: 'text-rose-400', bar: 'bg-rose-500' };
+    if (procrastinationScore >= 40) return { label: 'Moderate Slip', color: 'text-amber-400', bar: 'bg-amber-500' };
     if (completionRate >= 50) return { label: 'High Focus Flow', color: 'text-emerald-400', bar: 'bg-emerald-500' };
     return { label: 'Active Progress', color: 'text-indigo-400', bar: 'bg-indigo-500' };
   };
@@ -125,9 +129,9 @@ const ProductivityIndicator = () => {
                 <span className="font-mono text-slate-200 font-semibold">{pendingHours.toFixed(1)} hrs</span>
               </div>
               <div className="flex items-center justify-between">
-                <span>Procrastination Slips:</span>
-                <span className={`font-mono font-semibold ${overdueTasks > 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
-                  {overdueTasks} overdue
+                <span>Procrastination Score:</span>
+                <span className={`font-mono font-semibold ${rating.color}`}>
+                  {procrastinationScore} / 100
                 </span>
               </div>
             </div>
@@ -135,13 +139,13 @@ const ProductivityIndicator = () => {
         </div>
       </div>
 
-      {/* Motivational insight footer */}
+      {/* Motivational insight footer with contextual humour */}
       <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
-        <span className="flex items-center gap-1.5">
-          <TrendingUp className="w-3.5 h-3.5 text-indigo-400" />
-          <span>Completed: {completedTasks} / {totalTasks} tasks</span>
+        <span className="flex items-center gap-1.5 truncate max-w-xs">
+          <TrendingUp className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+          <span className="truncate">{humorMessage?.message || `Completed: ${completedTasks} / ${totalTasks} tasks`}</span>
         </span>
-        <span className="text-slate-500">DSA Mini Project v1</span>
+        <span className="text-slate-500 shrink-0">Score: {procrastinationScore}</span>
       </div>
     </Card>
   );

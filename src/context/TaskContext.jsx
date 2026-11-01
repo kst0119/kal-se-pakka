@@ -3,6 +3,15 @@ import { INITIAL_TASKS } from '../constants/initialTasks';
 import { isDueToday, isOverdue } from '../utils/dateUtils';
 import { TaskManager } from '../dsa/TaskManager.js';
 import { calculatePriorityScore } from '../dsa/priorityCalculator.js';
+import {
+  calculateProductivityStats,
+  calculateProcrastinationScore,
+  getContextualHumorMessage,
+  getCompletedVsPendingChartData,
+  getCategoryChartData,
+  getWeeklyProductivityChartData,
+  getCompletionTrendChartData,
+} from '../utils/analyticsCalculator.js';
 
 const TaskContext = createContext();
 
@@ -117,7 +126,6 @@ export const TaskProvider = ({ children }) => {
 
   /**
    * Add a new task with duplicate prevention and validation.
-   * Calculates priority and synchronizes with DSA structures.
    */
   const addTask = (newTaskData) => {
     const trimmedTitle = newTaskData.title ? newTaskData.title.trim() : '';
@@ -155,7 +163,6 @@ export const TaskProvider = ({ children }) => {
       priorityData,
     };
 
-    // Update state
     setTasks(prev => [newTask, ...prev]);
     showToast(`Task "${newTask.title}" scheduled! (Priority Score: ${newTask.priority})`, 'success');
     return { success: true, task: newTask };
@@ -163,7 +170,6 @@ export const TaskProvider = ({ children }) => {
 
   /**
    * Edit/Update an existing task.
-   * Recalculates priority score, updates Hash Map and Max Heap, and logs status transitions.
    */
   const updateTask = (id, updatedFields) => {
     let updatedTaskObj = null;
@@ -229,7 +235,6 @@ export const TaskProvider = ({ children }) => {
 
     setTasks(prev => prev.filter(t => t.id !== id));
 
-    // Maintain history of deleted tasks
     setHistory(prev => [
       {
         id: `hist-${Date.now()}`,
@@ -250,7 +255,6 @@ export const TaskProvider = ({ children }) => {
 
   /**
    * Toggle task status between Completed and Pending/Overdue.
-   * Enforces heap invariant: completed tasks are evicted from Max Heap.
    */
   const toggleTaskStatus = (id) => {
     const target = tasks.find(t => t.id === id);
@@ -267,8 +271,7 @@ export const TaskProvider = ({ children }) => {
   };
 
   /**
-   * Postpone task:
-   * Changes deadline, increments postpone counter, recalculates priority, and logs audit record.
+   * Postpone task.
    */
   const postponeTask = (id, newDeadline, reason = 'Rescheduled') => {
     const task = tasks.find(t => t.id === id);
@@ -298,7 +301,6 @@ export const TaskProvider = ({ children }) => {
       })
     );
 
-    // Record in history log
     setHistory(prev => [
       {
         id: `hist-${Date.now()}`,
@@ -321,7 +323,7 @@ export const TaskProvider = ({ children }) => {
   };
 
   /**
-   * Restore a completed, postponed, or deleted task from history back to active pending tasks.
+   * Restore a completed, postponed, or deleted task from history.
    */
   const restoreTask = (historyItem) => {
     const existing = tasks.find(t => t.id === historyItem.taskId);
@@ -369,41 +371,16 @@ export const TaskProvider = ({ children }) => {
     return taskManagerRef.current.getTask(id);
   };
 
-  // Compute stats and recommendations using the Max Heap
+  // Compute stats and recommendations using the Max Heap and Analytics Engine
   const stats = useMemo(() => {
-    // Synchronize TaskManager instance with current tasks
     const tm = new TaskManager();
     tm.setTasks(tasks);
 
-    const total = tasks.length;
-    let pending = 0;
-    let completed = 0;
-    let overdue = 0;
-    let postponed = 0;
-    const todayTasks = [];
+    // Productivity metrics
+    const productivityStats = calculateProductivityStats(tasks, history);
 
-    tasks.forEach(task => {
-      const taskOverdue = isOverdue(task.deadline, task.status);
-
-      if (task.status === 'Completed') {
-        completed++;
-      } else {
-        if (taskOverdue) {
-          overdue++;
-        }
-        pending++;
-      }
-
-      if (task.postponedCount && task.postponedCount > 0) {
-        postponed++;
-      }
-
-      if (isDueToday(task.deadline)) {
-        todayTasks.push(task);
-      }
-    });
-
-    const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
+    // Filter today's tasks
+    const todayTasks = tasks.filter(t => isDueToday(t.deadline));
 
     // Extract highest-priority task directly from Max Heap root (O(1) peek)
     const topHeapTask = tm.getHighestPriorityTask();
@@ -414,22 +391,30 @@ export const TaskProvider = ({ children }) => {
       recommendationReason = pd.reason || `Extracted by Max Heap root with Priority Score ${topHeapTask.priority}.`;
     }
 
+    // Contextual Humorous message
+    const humorMessage = getContextualHumorMessage(productivityStats);
+
+    // Recharts Data Sets (Real Data)
+    const chartData = {
+      completedVsPending: getCompletedVsPendingChartData(tasks),
+      category: getCategoryChartData(tasks),
+      weekly: getWeeklyProductivityChartData(tasks, history),
+      trend: getCompletionTrendChartData(tasks, history),
+    };
+
     const syncStatus = tm.verifySynchronization();
 
     return {
-      total,
-      pending,
-      completed,
-      overdue,
-      postponed,
+      ...productivityStats,
       todayTasks,
-      completionRate,
       recommendedTask: topHeapTask,
       recommendationReason,
+      humorMessage,
+      chartData,
       syncStatus,
       heapPendingCount: tm.getPendingCount(),
     };
-  }, [tasks]);
+  }, [tasks, history]);
 
   const value = {
     tasks,
