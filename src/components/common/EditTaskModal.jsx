@@ -60,9 +60,9 @@ const EditTaskModal = () => {
   ];
 
   const importanceLevels = [
-    { id: 'Low', label: 'Low', color: 'border-sky-500/40 text-sky-300 bg-sky-500/10' },
-    { id: 'Medium', label: 'Medium', color: 'border-amber-500/40 text-amber-300 bg-amber-500/10' },
-    { id: 'High', label: 'High', color: 'border-rose-500/40 text-rose-300 bg-rose-500/10' },
+    { id: 'Low', label: 'Low', color: 'border-emerald-500/40 text-emerald-700 dark:text-emerald-300 bg-emerald-500/10' },
+    { id: 'Medium', label: 'Medium', color: 'border-amber-500/40 text-amber-700 dark:text-amber-300 bg-amber-500/10' },
+    { id: 'High', label: 'High', color: 'border-rose-500/40 text-rose-700 dark:text-rose-300 bg-rose-500/10' },
   ];
 
   const statuses = ['Pending', 'In Progress', 'Completed', 'Overdue'];
@@ -127,22 +127,22 @@ const EditTaskModal = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in overflow-y-auto">
-      <div className="bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden my-8">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-charcoal-950/70 backdrop-blur-sm animate-fade-in overflow-y-auto">
+      <div className="bg-cream-50 dark:bg-charcoal-850 border border-cream-300 dark:border-charcoal-750 rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden my-8">
         {/* Modal Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-950/40">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-cream-200 dark:border-charcoal-750 bg-cream-100/60 dark:bg-charcoal-900/60">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+            <div className="p-2 rounded-xl bg-coral-500/15 text-coral-500 border border-coral-500/25">
               <Edit3 className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-semibold text-slate-100 text-lg">Edit Task Details</h3>
-              <p className="text-xs text-slate-400">Updates recalculate Max Heap priority automatically</p>
+              <h3 className="font-bold text-charcoal-900 dark:text-cream-100 text-lg">Edit Task Details</h3>
+              <p className="text-xs text-charcoal-500 dark:text-charcoal-400">Updates recalculate Max Heap priority automatically</p>
             </div>
           </div>
           <button
             onClick={() => setEditModalTask(null)}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors"
+            className="p-1.5 rounded-lg text-charcoal-400 dark:text-charcoal-400 hover:text-charcoal-900 dark:hover:text-cream-100 hover:bg-cream-200 dark:hover:bg-charcoal-750 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -152,8 +152,8 @@ const EditTaskModal = () => {
         <form onSubmit={handleSave} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
           {/* Title */}
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
-              Task Title <span className="text-rose-400">*</span>
+            <label className="block text-xs font-bold uppercase tracking-wider text-charcoal-700 dark:text-charcoal-300 mb-1.5">
+              Task Title <span className="text-coral-500">*</span>
             </label>
             <input
               type="text"
@@ -162,14 +162,14 @@ const EditTaskModal = () => {
                 setFormData({ ...formData, title: e.target.value });
                 if (errors.title) setErrors({ ...errors, title: null });
               }}
-              className={`w-full bg-slate-800 border rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:ring-2 ${
+              className={`w-full bg-white dark:bg-charcoal-900 border rounded-xl px-3.5 py-2.5 text-sm text-charcoal-900 dark:text-cream-100 focus:outline-none focus:ring-2 ${
                 errors.title
-                  ? 'border-rose-500 focus:ring-rose-500/50'
-                  : 'border-slate-700 focus:ring-indigo-500/50'
+                  ? 'border-rose-500 focus:ring-rose-500/40'
+                  : 'border-cream-300 dark:border-charcoal-700 focus:ring-coral-500/40 focus:border-coral-500'
               }`}
             />
             {errors.title && (
-              <p className="mt-1 text-xs text-rose-400 flex items-center gap-1">
+              <p className="mt-1 text-xs text-rose-500 flex items-center gap-1 font-medium">
                 <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                 {errors.title}
               </p>
@@ -178,20 +178,20 @@ const EditTaskModal = () => {
 
           {/* Description */}
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
+            <label className="block text-xs font-bold uppercase tracking-wider text-charcoal-700 dark:text-charcoal-300 mb-1.5">
               Description
             </label>
             <textarea
               rows={2}
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+              className="w-full bg-white dark:bg-charcoal-900 border border-cream-300 dark:border-charcoal-700 rounded-xl px-3.5 py-2 text-sm text-charcoal-900 dark:text-cream-100 focus:outline-none focus:ring-2 focus:ring-coral-500/40 focus:border-coral-500"
             />
           </div>
 
           {/* Category */}
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
+            <label className="block text-xs font-bold uppercase tracking-wider text-charcoal-700 dark:text-charcoal-300 mb-1.5">
               Category
             </label>
             <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
@@ -205,8 +205,8 @@ const EditTaskModal = () => {
                     onClick={() => setFormData({ ...formData, category: cat.id })}
                     className={`p-2 rounded-xl border text-center flex flex-col items-center justify-center transition-all ${
                       isSelected
-                        ? 'border-indigo-500 bg-indigo-500/20 text-indigo-200'
-                        : 'border-slate-800 bg-slate-800/40 text-slate-400 hover:bg-slate-800'
+                        ? 'border-coral-500 bg-coral-500/15 text-coral-600 dark:text-coral-300 shadow-sm font-bold'
+                        : 'border-cream-300 dark:border-charcoal-700 bg-white/70 dark:bg-charcoal-800/60 text-charcoal-600 dark:text-charcoal-400 hover:border-coral-500/40'
                     }`}
                   >
                     <Icon className="w-3.5 h-3.5 mb-1" />
@@ -220,8 +220,8 @@ const EditTaskModal = () => {
           {/* Deadline & Duration Row */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
-                Deadline <span className="text-rose-400">*</span>
+              <label className="block text-xs font-bold uppercase tracking-wider text-charcoal-700 dark:text-charcoal-300 mb-1.5">
+                Deadline <span className="text-coral-500">*</span>
               </label>
               <input
                 type="datetime-local"
@@ -230,20 +230,20 @@ const EditTaskModal = () => {
                   setFormData({ ...formData, deadline: e.target.value });
                   if (errors.deadline) setErrors({ ...errors, deadline: null });
                 }}
-                className={`w-full bg-slate-800 border rounded-xl px-3 py-2 text-xs font-mono text-slate-100 focus:outline-none focus:ring-2 ${
+                className={`w-full bg-white dark:bg-charcoal-900 border rounded-xl px-3 py-2 text-xs font-mono text-charcoal-900 dark:text-cream-100 focus:outline-none focus:ring-2 ${
                   errors.deadline
-                    ? 'border-rose-500 focus:ring-rose-500/50'
-                    : 'border-slate-700 focus:ring-indigo-500/50'
+                    ? 'border-rose-500 focus:ring-rose-500/40'
+                    : 'border-cream-300 dark:border-charcoal-700 focus:ring-coral-500/40 focus:border-coral-500'
                 }`}
               />
               {errors.deadline && (
-                <p className="mt-1 text-xs text-rose-400">{errors.deadline}</p>
+                <p className="mt-1 text-xs text-rose-500 font-medium">{errors.deadline}</p>
               )}
             </div>
 
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
-                Duration (Hours) <span className="text-rose-400">*</span>
+              <label className="block text-xs font-bold uppercase tracking-wider text-charcoal-700 dark:text-charcoal-300 mb-1.5">
+                Duration (Hours) <span className="text-coral-500">*</span>
               </label>
               <input
                 type="number"
@@ -255,14 +255,14 @@ const EditTaskModal = () => {
                   setFormData({ ...formData, duration: e.target.value });
                   if (errors.duration) setErrors({ ...errors, duration: null });
                 }}
-                className={`w-full bg-slate-800 border rounded-xl px-3 py-2 text-xs font-mono text-slate-100 focus:outline-none focus:ring-2 ${
+                className={`w-full bg-white dark:bg-charcoal-900 border rounded-xl px-3 py-2 text-xs font-mono text-charcoal-900 dark:text-cream-100 focus:outline-none focus:ring-2 ${
                   errors.duration
-                    ? 'border-rose-500 focus:ring-rose-500/50'
-                    : 'border-slate-700 focus:ring-indigo-500/50'
+                    ? 'border-rose-500 focus:ring-rose-500/40'
+                    : 'border-cream-300 dark:border-charcoal-700 focus:ring-coral-500/40 focus:border-coral-500'
                 }`}
               />
               {errors.duration && (
-                <p className="mt-1 text-xs text-rose-400">{errors.duration}</p>
+                <p className="mt-1 text-xs text-rose-500 font-medium">{errors.duration}</p>
               )}
             </div>
           </div>
@@ -270,7 +270,7 @@ const EditTaskModal = () => {
           {/* Importance & Status Row */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
+              <label className="block text-xs font-bold uppercase tracking-wider text-charcoal-700 dark:text-charcoal-300 mb-1.5">
                 Importance Level
               </label>
               <div className="flex gap-2">
@@ -279,10 +279,10 @@ const EditTaskModal = () => {
                     key={lvl.id}
                     type="button"
                     onClick={() => setFormData({ ...formData, importance: lvl.id })}
-                    className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-semibold border transition-all ${
+                    className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-bold border transition-all ${
                       formData.importance === lvl.id
                         ? `${lvl.color} ring-1 ring-current`
-                        : 'border-slate-800 bg-slate-800/40 text-slate-400 hover:bg-slate-800'
+                        : 'border-cream-300 dark:border-charcoal-700 bg-white/70 dark:bg-charcoal-800/60 text-charcoal-600 dark:text-charcoal-400 hover:border-coral-500/30'
                     }`}
                   >
                     {lvl.label}
@@ -292,16 +292,16 @@ const EditTaskModal = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
+              <label className="block text-xs font-bold uppercase tracking-wider text-charcoal-700 dark:text-charcoal-300 mb-1.5">
                 Status
               </label>
               <select
                 value={formData.status}
                 onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                className="w-full bg-white dark:bg-charcoal-900 border border-cream-300 dark:border-charcoal-700 rounded-xl px-3 py-2 text-xs text-charcoal-900 dark:text-cream-100 focus:outline-none focus:ring-2 focus:ring-coral-500/40 focus:border-coral-500"
               >
                 {statuses.map((st) => (
-                  <option key={st} value={st} className="bg-slate-900">
+                  <option key={st} value={st} className="bg-white dark:bg-charcoal-900">
                     {st}
                   </option>
                 ))}
@@ -311,7 +311,7 @@ const EditTaskModal = () => {
 
           {/* Notes */}
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
+            <label className="block text-xs font-bold uppercase tracking-wider text-charcoal-700 dark:text-charcoal-300 mb-1.5">
               Notes / Reminders
             </label>
             <input
@@ -319,12 +319,12 @@ const EditTaskModal = () => {
               placeholder="e.g. Discuss with lab partner first"
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+              className="w-full bg-white dark:bg-charcoal-900 border border-cream-300 dark:border-charcoal-700 rounded-xl px-3.5 py-2 text-xs text-charcoal-900 dark:text-cream-100 focus:outline-none focus:ring-2 focus:ring-coral-500/40 focus:border-coral-500"
             />
           </div>
 
           {/* Actions */}
-          <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+          <div className="flex items-center justify-end gap-3 pt-3 border-t border-cream-200 dark:border-charcoal-750">
             <Button
               type="button"
               variant="secondary"
@@ -349,4 +349,3 @@ const EditTaskModal = () => {
 };
 
 export default EditTaskModal;
-

@@ -1,17 +1,17 @@
 import React from 'react';
 import {
-  CheckSquare,
   Clock,
   CheckCircle2,
   AlertTriangle,
   Sparkles,
-  Calendar,
   Layers,
-  ArrowUpRight,
-  TrendingUp,
+  Flame,
   Smile,
+  Plus,
+  ArrowRight,
 } from 'lucide-react';
 import { useTask } from '../../context/TaskContext';
+import { useAuth } from '../../context/AuthContext';
 import { getTodayFormatted } from '../../utils/dateUtils';
 import StatCard from './StatCard';
 import NextRecommendedTask from './NextRecommendedTask';
@@ -21,32 +21,38 @@ import Button from '../common/Button';
 
 const DashboardView = () => {
   const { stats, setActiveTab } = useTask();
+  const { user } = useAuth();
+
+  const firstName = user?.user_metadata?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'Bestie';
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
       {/* Welcome Banner */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 border border-slate-800/80 p-6 sm:p-8">
+      <div className="relative overflow-hidden rounded-3xl bg-white dark:bg-charcoal-850 border border-cream-300 dark:border-charcoal-750 p-6 sm:p-8 shadow-card-light dark:shadow-card-dark transition-colors">
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-semibold">
-              <Sparkles className="w-3.5 h-3.5 text-purple-400" />
-              <span>DSA Anti-Procrastination Dashboard</span>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-coral-500/10 border border-coral-500/20 text-coral-600 dark:text-coral-400 text-xs font-bold">
+              <Flame className="w-3.5 h-3.5 text-coral-500 animate-bounce" />
+              <span>DSA Anti-Procrastination Engine</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-              Welcome back, Aryan! 👋
+
+            <h1 className="text-2xl sm:text-4xl font-black text-charcoal-950 dark:text-white tracking-tight">
+              Hey {firstName}! Ready to lock in? 🔥
             </h1>
-            <p className="text-sm text-slate-300 max-w-2xl leading-relaxed">
-              Today is <span className="text-indigo-300 font-semibold">{getTodayFormatted()}</span>.
-              You have <span className="font-semibold text-white font-mono">{stats.pending}</span> pending tasks
+
+            <p className="text-xs sm:text-sm text-charcoal-600 dark:text-charcoal-300 max-w-2xl leading-relaxed font-medium">
+              Today is <span className="text-coral-600 dark:text-coral-400 font-bold">{getTodayFormatted()}</span>.
+              You have <span className="font-black text-charcoal-950 dark:text-white font-mono">{stats.pending}</span> pending task{stats.pending === 1 ? '' : 's'}
               {stats.overdue > 0 ? (
-                <span> and <span className="text-rose-400 font-semibold font-mono">{stats.overdue} overdue</span>. Let's tackle them before saying "Kal Se Pakka"!</span>
+                <span> and <span className="text-rose-500 font-black font-mono">{stats.overdue} overdue</span>. Let's conquer them before saying "Kal Se Pakka"!</span>
               ) : (
-                <span>. You are on track with your deadlines today.</span>
+                <span>. You are on track with your deadlines today!</span>
               )}
             </p>
+
             {stats.humorMessage && (
-              <p className="text-xs text-purple-300/90 italic pt-1 flex items-center gap-1.5">
-                <Smile className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              <p className="text-xs text-charcoal-500 dark:text-charcoal-400 italic pt-1 flex items-center gap-1.5 font-medium">
+                <Smile className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                 <span>"{stats.humorMessage.message}"</span>
               </p>
             )}
@@ -63,16 +69,14 @@ const DashboardView = () => {
             <Button
               variant="primary"
               size="md"
+              icon={Plus}
               onClick={() => setActiveTab('add-task')}
+              className="shadow-coral-glow"
             >
-              + New Task
+              New Task
             </Button>
           </div>
         </div>
-
-        {/* Ambient background glow */}
-        <div className="absolute -right-20 -top-20 w-80 h-80 rounded-full bg-purple-600/10 blur-3xl pointer-events-none" />
-        <div className="absolute -left-20 -bottom-20 w-80 h-80 rounded-full bg-indigo-600/10 blur-3xl pointer-events-none" />
       </div>
 
       {/* 4 Metric Stat Cards */}
@@ -82,7 +86,7 @@ const DashboardView = () => {
           value={stats.total}
           subtitle="All academic & personal items"
           icon={Layers}
-          accentColor="indigo"
+          accentColor="coral"
           onClick={() => setActiveTab('tasks')}
         />
         <StatCard
@@ -90,15 +94,15 @@ const DashboardView = () => {
           value={stats.pending}
           subtitle="In queue & in progress"
           icon={Clock}
-          accentColor="purple"
+          accentColor="amber"
           onClick={() => setActiveTab('tasks')}
         />
         <StatCard
           title="Completed"
           value={stats.completed}
-          subtitle={`${stats.completionRate}% completion velocity`}
+          subtitle={`${stats.completionRate}% completion rate`}
           icon={CheckCircle2}
-          accentColor="emerald"
+          accentColor="lime"
           onClick={() => setActiveTab('history')}
         />
         <StatCard
@@ -115,11 +119,11 @@ const DashboardView = () => {
       <div>
         <div className="flex items-center justify-between mb-3 px-1">
           <div className="flex items-center gap-2">
-            <h2 className="text-lg font-bold text-white tracking-tight">
+            <h2 className="text-lg font-black text-charcoal-950 dark:text-white tracking-tight">
               Next Recommended Task
             </h2>
-            <span className="text-xs text-slate-400 font-medium hidden sm:inline">
-              (DSA Urgency & Importance Priority Heuristic)
+            <span className="text-xs text-charcoal-500 dark:text-charcoal-400 font-bold hidden sm:inline">
+              (Extracted from Max Heap Root)
             </span>
           </div>
         </div>
@@ -140,4 +144,3 @@ const DashboardView = () => {
 };
 
 export default DashboardView;
-

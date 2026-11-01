@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
+import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { TaskProvider, useTask } from './context/TaskContext';
+import LandingPage from './components/landing/LandingPage';
 import AuthView from './components/auth/AuthView';
 import Sidebar from './components/layout/Sidebar';
 import Header from './components/layout/Header';
@@ -36,7 +38,7 @@ const MainLayout = () => {
   };
 
   return (
-    <div className="min-h-screen bg-dark-900 text-slate-100 flex">
+    <div className="min-h-screen bg-cream-100 dark:bg-charcoal-900 text-charcoal-900 dark:text-cream-50 flex transition-colors duration-200">
       {/* Sidebar Navigation */}
       <Sidebar isMobileOpen={isMobileOpen} setIsMobileOpen={setIsMobileOpen} />
 
@@ -51,7 +53,7 @@ const MainLayout = () => {
         </main>
 
         {/* Global Footer */}
-        <footer className="border-t border-slate-800/80 px-6 py-4 text-center text-xs text-slate-500">
+        <footer className="border-t border-cream-300 dark:border-charcoal-800 px-6 py-4 text-center text-xs text-charcoal-500 dark:text-charcoal-400">
           <p>
             KAL SE PAKKA – Smart Procrastination & Task Management System • College DSA Mini Project
           </p>
@@ -68,33 +70,43 @@ const MainLayout = () => {
 
 const AppContent = () => {
   const { user, loading } = useAuth();
+  // State for unauthenticated user: null (Landing page) | 'login' | 'signup'
+  const [authMode, setAuthMode] = useState(null);
 
   // If restoring session or checking auth state, display a sleek loading splash
   if (loading) {
     return (
-      <div className="min-h-screen bg-dark-900 text-slate-100 flex flex-col items-center justify-center p-4">
+      <div className="min-h-screen bg-cream-100 dark:bg-charcoal-900 text-charcoal-900 dark:text-cream-50 flex flex-col items-center justify-center p-4 transition-colors">
         <div className="relative flex flex-col items-center">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-sky-500 flex items-center justify-center shadow-xl shadow-indigo-600/30 text-white font-black text-3xl animate-bounce">
+          <div className="w-16 h-16 rounded-2xl bg-coral-500 flex items-center justify-center text-white font-black text-3xl shadow-coral-glow animate-bounce">
             <span>⏳</span>
           </div>
-          <div className="mt-6 flex items-center gap-2 text-white font-bold text-lg tracking-tight">
+          <div className="mt-5 flex items-center gap-2 font-black text-lg tracking-tight">
             <span>KAL SE PAKKA</span>
-            <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">
-              DSA
+            <span className="text-[10px] uppercase font-black px-2 py-0.5 rounded-full bg-lime-400 text-charcoal-950">
+              DSA PRO
             </span>
           </div>
-          <p className="text-xs text-slate-400 mt-2 flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-indigo-500 animate-ping" />
-            Verifying Supabase authentication session...
+          <p className="text-xs text-charcoal-500 dark:text-charcoal-400 mt-2 flex items-center gap-2 font-medium">
+            <span className="w-2 h-2 rounded-full bg-coral-500 animate-ping" />
+            Loading Supabase cloud session...
           </p>
         </div>
       </div>
     );
   }
 
-  // If unauthenticated, display the full auth view (Login / Signup / Forgot Password)
+  // If unauthenticated: Show Landing Page by default, or Auth view when user clicks Sign In / Get Started
   if (!user) {
-    return <AuthView />;
+    if (authMode) {
+      return (
+        <AuthView
+          initialMode={authMode}
+          onBackToLanding={() => setAuthMode(null)}
+        />
+      );
+    }
+    return <LandingPage onOpenAuth={(mode) => setAuthMode(mode || 'signup')} />;
   }
 
   // If authenticated, render the protected application dashboard & task system
@@ -107,9 +119,11 @@ const AppContent = () => {
 
 function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 

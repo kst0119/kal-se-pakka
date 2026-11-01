@@ -26,6 +26,7 @@ import {
 } from '../utils/analyticsCalculator.js';
 import { useAuth } from './AuthContext';
 import { taskService } from '../services/taskService';
+import { getReaction } from '../utils/reactions';
 
 const TaskContext = createContext();
 
@@ -292,7 +293,8 @@ export const TaskProvider = ({ children }) => {
     };
 
     setTasks((prev) => [fullEnrichedTask, ...prev]);
-    showToast(`Task "${fullEnrichedTask.title}" saved! (Priority Score: ${fullEnrichedTask.priority})`, 'success');
+    const reaction = getReaction('created');
+    showToast(`${reaction} "${fullEnrichedTask.title}" added to Priority Queue!`, 'success');
     return { success: true, task: fullEnrichedTask };
   };
 
@@ -394,7 +396,7 @@ export const TaskProvider = ({ children }) => {
       ...prev,
     ]);
 
-    showToast(`Deleted "${taskToDelete.title}" (Cloud storage updated)`, 'info');
+    showToast(`${getReaction('deleted')} "${taskToDelete.title}" archived.`, 'info');
   };
 
   /**
@@ -444,7 +446,8 @@ export const TaskProvider = ({ children }) => {
         ...prev,
       ]);
 
-      showToast(`Completed "${target.title}"! (Removed from Priority Queue) 🎉`, 'success');
+      const reaction = getReaction('completed');
+      showToast(`${reaction} Completed "${target.title}"! 🎉`, 'celebrate');
     }
   };
 
@@ -506,7 +509,8 @@ export const TaskProvider = ({ children }) => {
       ...prev,
     ]);
 
-    showToast(`Task postponed in cloud: Priority recalculated in Max Heap.`, 'warning');
+    const reaction = getReaction('postponed');
+    showToast(`${reaction} Postponed with delay tax. Priority recalculated.`, 'warning');
     setPostponeModalTask(null);
   };
 
@@ -655,6 +659,27 @@ export const TaskProvider = ({ children }) => {
     };
   }, [tasks, history]);
 
+  /**
+   * Mark a notification as read and persist to Supabase.
+   */
+  const markNotificationAsRead = async (notifId) => {
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === notifId ? { ...n, is_read: true } : n))
+    );
+    await taskService.markNotificationRead(notifId);
+  };
+
+  /**
+   * Mark all unread notifications as read and persist to Supabase.
+   */
+  const markAllNotificationsAsRead = async () => {
+    if (!user?.id) return;
+    setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+    await taskService.markAllNotificationsRead(user.id);
+  };
+
+  const unreadNotificationCount = notifications.filter((n) => !n.is_read).length;
+
   const value = {
     tasks,
     history,
@@ -682,6 +707,9 @@ export const TaskProvider = ({ children }) => {
     isLoadingTasks,
     cloudSyncStatus,
     notifications,
+    unreadNotificationCount,
+    markNotificationAsRead,
+    markAllNotificationsAsRead,
   };
 
   return <TaskContext.Provider value={value}>{children}</TaskContext.Provider>;

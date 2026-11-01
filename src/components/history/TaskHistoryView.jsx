@@ -44,39 +44,39 @@ const TaskHistoryView = () => {
   return (
     <div className="space-y-6">
       {/* Header Banner */}
-      <div className="rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 border border-slate-800 p-6 shadow-card">
+      <div className="rounded-2xl bg-cream-100/90 dark:bg-charcoal-850 border border-cream-300 dark:border-charcoal-750 p-6 shadow-card">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-semibold mb-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-coral-500/10 border border-coral-500/20 text-coral-600 dark:text-coral-400 text-xs font-bold mb-2">
               <History className="w-3.5 h-3.5" />
-              <span>Historical Archive & Postponement Log</span>
+              <span>Historical Archive & Postponement Audit</span>
             </div>
-            <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-              Task History & Procrastination Audit
+            <h2 className="text-xl sm:text-2xl font-black text-charcoal-900 dark:text-cream-100 tracking-tight">
+              Task History & Procrastination Log
             </h2>
-            <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-2xl">
-              Keep an honest record of successfully submitted tasks, deleted items, and every "Kal Se Pakka" postponement decision.
+            <p className="text-xs sm:text-sm text-charcoal-600 dark:text-charcoal-350 mt-1 max-w-2xl font-medium">
+              Keep an honest record of successfully submitted tasks, deleted items, and every "Kal Se Pakka" postponement excuse.
             </p>
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="px-3.5 py-2 rounded-xl bg-slate-800/80 border border-slate-700/80 text-center">
-              <div className="text-[10px] uppercase font-bold text-slate-400">Completed</div>
-              <div className="text-lg font-black text-emerald-400 font-mono">
+            <div className="px-3.5 py-2 rounded-xl bg-cream-50 dark:bg-charcoal-800 border border-cream-300 dark:border-charcoal-700 text-center min-w-[70px]">
+              <div className="text-[10px] uppercase font-bold text-charcoal-500 dark:text-charcoal-400">Completed</div>
+              <div className="text-lg font-black text-lime-600 dark:text-lime-400 font-mono">
                 {completedCount}
               </div>
             </div>
 
-            <div className="px-3.5 py-2 rounded-xl bg-slate-800/80 border border-slate-700/80 text-center">
-              <div className="text-[10px] uppercase font-bold text-slate-400">Postponed</div>
-              <div className="text-lg font-black text-amber-400 font-mono">
+            <div className="px-3.5 py-2 rounded-xl bg-cream-50 dark:bg-charcoal-800 border border-cream-300 dark:border-charcoal-700 text-center min-w-[70px]">
+              <div className="text-[10px] uppercase font-bold text-charcoal-500 dark:text-charcoal-400">Postponed</div>
+              <div className="text-lg font-black text-amber-500 font-mono">
                 {postponedCount}
               </div>
             </div>
 
-            <div className="px-3.5 py-2 rounded-xl bg-slate-800/80 border border-slate-700/80 text-center">
-              <div className="text-[10px] uppercase font-bold text-slate-400">Deleted</div>
-              <div className="text-lg font-black text-rose-400 font-mono">
+            <div className="px-3.5 py-2 rounded-xl bg-cream-50 dark:bg-charcoal-800 border border-cream-300 dark:border-charcoal-700 text-center min-w-[70px]">
+              <div className="text-[10px] uppercase font-bold text-charcoal-500 dark:text-charcoal-400">Deleted</div>
+              <div className="text-lg font-black text-rose-500 font-mono">
                 {deletedCount}
               </div>
             </div>
@@ -85,45 +85,45 @@ const TaskHistoryView = () => {
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="bg-slate-900/80 rounded-2xl border border-slate-800/80 p-4 shadow-card flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div className="bg-cream-50 dark:bg-charcoal-850 rounded-2xl border border-cream-300 dark:border-charcoal-750 p-4 shadow-card flex flex-col sm:flex-row items-center justify-between gap-4">
         {/* Filter Pills */}
         <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
           <button
             onClick={() => setFilterAction('All')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
               filterAction === 'All'
-                ? 'bg-indigo-600 text-white shadow-sm'
-                : 'bg-slate-800/70 text-slate-400 hover:text-slate-200'
+                ? 'bg-charcoal-900 dark:bg-cream-100 text-cream-100 dark:text-charcoal-900 shadow-sm'
+                : 'bg-cream-200/70 dark:bg-charcoal-800 text-charcoal-600 dark:text-charcoal-400 hover:text-charcoal-900 dark:hover:text-cream-200'
             }`}
           >
             All ({history.length})
           </button>
           <button
             onClick={() => setFilterAction('Completed')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
               filterAction === 'Completed'
-                ? 'bg-emerald-600 text-white shadow-sm'
-                : 'bg-slate-800/70 text-slate-400 hover:text-slate-200'
+                ? 'bg-lime-500 text-charcoal-950 shadow-sm'
+                : 'bg-cream-200/70 dark:bg-charcoal-800 text-charcoal-600 dark:text-charcoal-400 hover:text-charcoal-900 dark:hover:text-cream-200'
             }`}
           >
             Completed ({completedCount})
           </button>
           <button
             onClick={() => setFilterAction('Postponed')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
               filterAction === 'Postponed'
-                ? 'bg-amber-600 text-white shadow-sm'
-                : 'bg-slate-800/70 text-slate-400 hover:text-slate-200'
+                ? 'bg-amber-500 text-charcoal-950 shadow-sm'
+                : 'bg-cream-200/70 dark:bg-charcoal-800 text-charcoal-600 dark:text-charcoal-400 hover:text-charcoal-900 dark:hover:text-cream-200'
             }`}
           >
             Postponed ({postponedCount})
           </button>
           <button
             onClick={() => setFilterAction('Deleted')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
               filterAction === 'Deleted'
-                ? 'bg-rose-600 text-white shadow-sm'
-                : 'bg-slate-800/70 text-slate-400 hover:text-slate-200'
+                ? 'bg-rose-500 text-white shadow-sm'
+                : 'bg-cream-200/70 dark:bg-charcoal-800 text-charcoal-600 dark:text-charcoal-400 hover:text-charcoal-900 dark:hover:text-cream-200'
             }`}
           >
             Deleted ({deletedCount})
@@ -132,13 +132,13 @@ const TaskHistoryView = () => {
 
         {/* Search */}
         <div className="relative w-full sm:w-64">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-charcoal-400 dark:text-charcoal-500 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             placeholder="Search history records..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-slate-800/70 border border-slate-700/70 rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+            className="w-full bg-cream-100 dark:bg-charcoal-900 border border-cream-300 dark:border-charcoal-700 rounded-xl pl-9 pr-3 py-1.5 text-xs text-charcoal-900 dark:text-cream-100 placeholder-charcoal-400 dark:placeholder-charcoal-500 focus:outline-none focus:ring-2 focus:ring-coral-500/50"
           />
         </div>
       </div>
@@ -146,11 +146,11 @@ const TaskHistoryView = () => {
       {/* History Items List */}
       <div className="space-y-3">
         {filteredHistory.length === 0 ? (
-          <div className="bg-slate-900/40 rounded-2xl border border-slate-800 p-12 text-center">
-            <History className="w-8 h-8 text-slate-500 mx-auto mb-3" />
-            <h3 className="text-base font-bold text-white mb-1">No history records found</h3>
-            <p className="text-xs text-slate-400">
-              Completed, postponed, or deleted tasks will automatically be logged here.
+          <div className="bg-cream-50 dark:bg-charcoal-850 rounded-2xl border border-cream-300 dark:border-charcoal-750 p-12 text-center">
+            <History className="w-8 h-8 text-charcoal-400 dark:text-charcoal-500 mx-auto mb-3" />
+            <h3 className="text-base font-bold text-charcoal-900 dark:text-cream-100 mb-1">No history records found</h3>
+            <p className="text-xs text-charcoal-500 dark:text-charcoal-400">
+              Completed milestones, postponement excuses, or deleted tasks will automatically be logged here.
             </p>
           </div>
         ) : (
@@ -161,17 +161,17 @@ const TaskHistoryView = () => {
             return (
               <div
                 key={item.id}
-                className="bg-slate-900/80 rounded-2xl border border-slate-800 p-4 sm:p-5 transition-all hover:border-slate-700 shadow-sm"
+                className="bg-cream-50 dark:bg-charcoal-850 rounded-2xl border border-cream-300 dark:border-charcoal-750 p-4 sm:p-5 transition-all hover:border-coral-500/40 shadow-sm"
               >
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="flex items-start gap-3">
                     <div
                       className={`p-2 rounded-xl mt-0.5 shrink-0 ${
                         isCompleted
-                          ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                          ? 'bg-lime-500/15 text-lime-600 dark:text-lime-400 border border-lime-500/25'
                           : isDeleted
-                          ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
-                          : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                          ? 'bg-rose-500/10 text-rose-500 border border-rose-500/20'
+                          : 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
                       }`}
                     >
                       {isCompleted ? (
@@ -188,10 +188,10 @@ const TaskHistoryView = () => {
                         <span
                           className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
                             isCompleted
-                              ? 'bg-emerald-500/20 text-emerald-300'
+                              ? 'bg-lime-500/20 text-lime-700 dark:text-lime-300'
                               : isDeleted
-                              ? 'bg-rose-500/20 text-rose-300'
-                              : 'bg-amber-500/20 text-amber-300'
+                              ? 'bg-rose-500/20 text-rose-700 dark:text-rose-300'
+                              : 'bg-amber-500/20 text-amber-700 dark:text-amber-300'
                           }`}
                         >
                           {item.action}
@@ -201,19 +201,19 @@ const TaskHistoryView = () => {
                         {item.importance && <ImportanceBadge importance={item.importance} />}
                       </div>
 
-                      <h4 className="text-base font-bold text-white">
+                      <h4 className="text-base font-bold text-charcoal-900 dark:text-cream-100">
                         {item.title}
                       </h4>
 
                       {/* Postponement details */}
                       {!isCompleted && !isDeleted && item.reason && (
-                        <div className="mt-2 text-xs text-amber-200/90 bg-amber-500/10 rounded-lg p-2 border border-amber-500/20 flex items-start gap-2">
-                          <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0 text-amber-400" />
+                        <div className="mt-2 text-xs text-amber-800 dark:text-amber-200 bg-amber-500/10 rounded-lg p-2.5 border border-amber-500/20 flex items-start gap-2">
+                          <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0 text-amber-500" />
                           <div>
-                            <span className="font-semibold">Reason:</span> {item.reason}
+                            <span className="font-bold">Reason:</span> {item.reason}
                             {item.originalDeadline && item.newDeadline && (
-                              <div className="text-[11px] text-amber-300/80 mt-0.5 font-mono">
-                                Shifted from {formatDate(item.originalDeadline)} → {formatDate(item.newDeadline)}
+                              <div className="text-[11px] text-amber-700 dark:text-amber-300 mt-0.5 font-mono font-medium">
+                                Shifted: {formatDate(item.originalDeadline)} → {formatDate(item.newDeadline)}
                               </div>
                             )}
                           </div>
@@ -222,7 +222,7 @@ const TaskHistoryView = () => {
 
                       {/* Notes / description preview */}
                       {item.notes && (
-                        <p className="mt-1 text-xs text-slate-400">
+                        <p className="mt-1 text-xs text-charcoal-600 dark:text-charcoal-350">
                           {item.notes}
                         </p>
                       )}
@@ -230,9 +230,9 @@ const TaskHistoryView = () => {
                   </div>
 
                   {/* Right side: Timestamp & Restore button */}
-                  <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-800">
-                    <div className="flex items-center gap-1.5 text-xs text-slate-400">
-                      <Clock className="w-3.5 h-3.5 text-slate-500" />
+                  <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-cream-200 dark:border-charcoal-750">
+                    <div className="flex items-center gap-1.5 text-xs text-charcoal-500 dark:text-charcoal-400 font-medium">
+                      <Clock className="w-3.5 h-3.5 text-charcoal-400 dark:text-charcoal-500" />
                       <span>{formatDate(item.timestamp)}</span>
                     </div>
 

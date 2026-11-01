@@ -1,13 +1,13 @@
 /**
  * AuthView.jsx
  * 
- * Authentication interface for KAL SE PAKKA.
+ * Playful Gen-Z Authentication Screens for KAL SE PAKKA.
  * Supports:
- *  - Email & Password Login
+ *  - Real Supabase Email/Password Login
  *  - Full Registration (Full Name, Email, Password, Confirm Password)
- *  - Forgot Password / Password Reset
- * 
- * Styled with KAL SE PAKKA's dark SaaS theme (navy/charcoal, indigo & purple accents).
+ *  - Password Reset / Forgot Password
+ *  - Theme Toggle (Cream Light / Charcoal Dark)
+ *  - Smooth navigation back to Landing Page
  */
 
 import React, { useState } from 'react';
@@ -18,24 +18,27 @@ import {
   Eye,
   EyeOff,
   ArrowRight,
-  Sparkles,
-  ShieldCheck,
-  Zap,
+  Flame,
   CheckCircle2,
   AlertCircle,
   Clock,
   ChevronLeft,
   Loader2,
-  KeyRound,
+  Sun,
+  Moon,
+  Sparkles,
+  Zap,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 import Button from '../common/Button';
 
-const AuthView = () => {
+const AuthView = ({ initialMode = 'login', onBackToLanding }) => {
   const { login, signup, resetPassword, isConfigured } = useAuth();
+  const { isDark, toggleTheme } = useTheme();
 
   // Mode: 'login' | 'signup' | 'forgot'
-  const [mode, setMode] = useState('login');
+  const [mode, setMode] = useState(initialMode);
 
   // Form Fields
   const [fullName, setFullName] = useState('');
@@ -50,26 +53,25 @@ const AuthView = () => {
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
-  // Reset notifications on tab switch
   const switchMode = (newMode) => {
     setMode(newMode);
     setErrorMsg('');
     setSuccessMsg('');
   };
 
-  // Form Validation
+  // Validation
   const validateForm = () => {
     setErrorMsg('');
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!email.trim() || !emailRegex.test(email.trim())) {
-      setErrorMsg('Please enter a valid email address.');
+      setErrorMsg('Please enter a valid college or personal email address.');
       return false;
     }
 
     if (mode === 'signup') {
       if (!fullName.trim()) {
-        setErrorMsg('Please enter your full name.');
+        setErrorMsg('Please enter your full name, bestie.');
         return false;
       }
       if (password.length < 6) {
@@ -77,7 +79,7 @@ const AuthView = () => {
         return false;
       }
       if (password !== confirmPassword) {
-        setErrorMsg('Passwords do not match. Please re-enter.');
+        setErrorMsg('Passwords do not match. Double-check and try again!');
         return false;
       }
     }
@@ -90,7 +92,7 @@ const AuthView = () => {
     return true;
   };
 
-  // Submission handler
+  // Submit handler
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
@@ -103,12 +105,11 @@ const AuthView = () => {
       if (mode === 'login') {
         const result = await login(email.trim(), password);
         if (!result.success) {
-          // Format common Supabase error messages
           const rawErr = result.error?.message || '';
           if (rawErr.toLowerCase().includes('invalid login credentials')) {
-            setErrorMsg('Invalid email or password. Please verify and try again.');
+            setErrorMsg('Invalid email or password. Check for typos!');
           } else if (rawErr.toLowerCase().includes('email not confirmed')) {
-            setErrorMsg('Email address not yet confirmed. Please check your inbox for the confirmation link.');
+            setErrorMsg('Email not verified yet. Check your inbox for the Supabase confirmation link!');
           } else {
             setErrorMsg(rawErr || 'Failed to sign in. Please try again.');
           }
@@ -123,17 +124,16 @@ const AuthView = () => {
         if (!result.success) {
           const rawErr = result.error?.message || '';
           if (rawErr.toLowerCase().includes('already registered')) {
-            setErrorMsg('An account with this email already exists. Please log in.');
+            setErrorMsg('An account with this email already exists. Try logging in!');
           } else {
             setErrorMsg(rawErr || 'Failed to create account.');
           }
         } else {
           if (result.isEmailConfirmationRequired) {
             setSuccessMsg(
-              'Account created! A confirmation email has been sent. Please verify your email before logging in.'
+              'Account created! A confirmation link was sent to your email. Verify it and then log in.'
             );
-            // Switch to login tab after brief pause
-            setTimeout(() => setMode('login'), 4000);
+            setTimeout(() => setMode('login'), 3500);
           } else {
             setSuccessMsg('Account created successfully! Logging you in...');
           }
@@ -141,141 +141,162 @@ const AuthView = () => {
       } else if (mode === 'forgot') {
         const result = await resetPassword(email.trim());
         if (!result.success) {
-          setErrorMsg(result.error?.message || 'Failed to send password reset email.');
+          setErrorMsg(result.error?.message || 'Failed to dispatch password reset email.');
         } else {
           setSuccessMsg(
-            'Password reset link has been sent to your email! Please check your inbox and spam folder.'
+            'Password reset instructions sent! Check your inbox and spam folder.'
           );
         }
       }
     } catch (err) {
-      setErrorMsg(err.message || 'An unexpected error occurred. Please try again.');
+      setErrorMsg(err.message || 'An unexpected error occurred.');
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-dark-900 text-slate-100 flex flex-col justify-center items-center p-4 sm:p-6 lg:p-8 relative overflow-hidden">
-      {/* Decorative ambient background glows */}
-      <div className="absolute top-1/4 -left-48 w-96 h-96 bg-indigo-600/15 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-1/4 -right-48 w-96 h-96 bg-purple-600/15 rounded-full blur-3xl pointer-events-none" />
+    <div className="min-h-screen bg-cream-100 dark:bg-charcoal-900 text-charcoal-900 dark:text-cream-50 flex flex-col justify-center items-center p-4 sm:p-6 lg:p-8 relative transition-colors duration-200">
+      
+      {/* Top Controls: Back button & Theme Toggle */}
+      <div className="w-full max-w-5xl flex items-center justify-between mb-6 z-10">
+        {onBackToLanding ? (
+          <button
+            onClick={onBackToLanding}
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-charcoal-600 dark:text-cream-200 hover:text-coral-500 dark:hover:text-coral-400 transition-colors p-2 rounded-xl bg-white/70 dark:bg-charcoal-850/70 border border-cream-300 dark:border-charcoal-750 cursor-pointer shadow-sm"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            <span>Back to Home</span>
+          </button>
+        ) : (
+          <div />
+        )}
+
+        <button
+          onClick={toggleTheme}
+          className="p-2.5 rounded-xl border border-cream-300 dark:border-charcoal-700 bg-white dark:bg-charcoal-850 text-charcoal-700 dark:text-cream-100 hover:border-coral-500 transition-all cursor-pointer shadow-sm"
+          title={isDark ? 'Switch to Warm Cream Light Mode' : 'Switch to Dark Charcoal Mode'}
+          aria-label="Toggle theme"
+        >
+          {isDark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-charcoal-700" />}
+        </button>
+      </div>
 
       {/* Main Container Card */}
       <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-center z-10">
         
-        {/* Left Side: Brand Narrative & DSA Project Highlights */}
+        {/* Left Side: Brand Narrative & Key Highlights */}
         <div className="lg:col-span-5 flex flex-col justify-center space-y-6">
-          {/* Logo & Project Title */}
           <div>
-            <div className="inline-flex items-center gap-3 mb-3">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-sky-500 flex items-center justify-center shadow-xl shadow-indigo-600/30 text-white font-black text-2xl">
+            <div className="inline-flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 rounded-2xl bg-coral-500 flex items-center justify-center text-white font-black text-2xl shadow-coral-glow">
                 <span>⏳</span>
               </div>
               <div>
-                <div className="flex items-center gap-2">
-                  <h1 className="text-2xl font-black text-white tracking-tight">
+                <div className="flex items-center gap-1.5">
+                  <h1 className="text-2xl font-black text-charcoal-950 dark:text-white tracking-tight">
                     KAL SE PAKKA
                   </h1>
-                  <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">
-                    DSA Pro
+                  <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-lime-400 text-charcoal-950 shadow-sm">
+                    DSA PRO
                   </span>
                 </div>
-                <p className="text-xs text-slate-400 font-medium">
-                  Smart Procrastination & Task Management System
+                <p className="text-xs text-charcoal-500 dark:text-charcoal-400 font-medium">
+                  Smart Procrastination & Task Management
                 </p>
               </div>
             </div>
 
-            <p className="text-sm text-slate-300 leading-relaxed mt-4">
-              Stop deferring your academic milestones to tomorrow. Powered by real data structures, 
-              custom Max-Heaps, and mathematical delay penalties to help students overcome procrastination.
+            <p className="text-sm text-charcoal-600 dark:text-charcoal-300 font-medium leading-relaxed mt-2">
+              Say goodbye to endless delay cycles. Schedule tasks with a real binary Max Heap, dynamic delay penalties, and Supabase cloud persistence.
             </p>
           </div>
 
-          {/* Feature Highlights */}
-          <div className="space-y-3.5 pt-2">
-            <div className="flex items-start gap-3 p-3.5 rounded-xl bg-slate-900/60 border border-slate-800/80">
-              <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 shrink-0">
-                <Zap className="w-4 h-4" />
+          {/* Highlights */}
+          <div className="space-y-3 pt-1">
+            <div className="flex items-start gap-3 p-3.5 rounded-2xl bg-white dark:bg-charcoal-850 border border-cream-200 dark:border-charcoal-750 shadow-sm">
+              <div className="p-2 rounded-xl bg-coral-500/10 text-coral-500 shrink-0">
+                <Flame className="w-4 h-4" />
               </div>
               <div>
-                <h2 className="text-xs font-semibold text-white">Custom Max-Heap Priority Queue</h2>
-                <p className="text-[11px] text-slate-400 mt-0.5">
-                  Dynamic priority calculation: <code className="text-indigo-300">0.5×Urgency + 0.3×Importance + 0.2×Effort</code>.
+                <h4 className="text-xs font-bold text-charcoal-950 dark:text-white">
+                  Custom Max Heap Priority Engine
+                </h4>
+                <p className="text-[11px] text-charcoal-500 dark:text-charcoal-400 mt-0.5">
+                  Dynamically balances <code className="text-coral-500 font-bold font-mono">Urgency</code>, <code className="text-amber-500 font-bold font-mono">Importance</code>, and <code className="text-lime-600 dark:text-lime-400 font-bold font-mono">Effort</code>.
                 </p>
               </div>
             </div>
 
-            <div className="flex items-start gap-3 p-3.5 rounded-xl bg-slate-900/60 border border-slate-800/80">
-              <div className="p-2 rounded-lg bg-purple-500/10 text-purple-400 border border-purple-500/20 shrink-0">
+            <div className="flex items-start gap-3 p-3.5 rounded-2xl bg-white dark:bg-charcoal-850 border border-cream-200 dark:border-charcoal-750 shadow-sm">
+              <div className="p-2 rounded-xl bg-lime-400/20 text-lime-800 dark:text-lime-400 shrink-0">
                 <Clock className="w-4 h-4" />
               </div>
               <div>
-                <h2 className="text-xs font-semibold text-white">Algorithmic Procrastination Score</h2>
-                <p className="text-[11px] text-slate-400 mt-0.5">
-                  Measures your delay habits with mathematical precision, tracking overdue and postponed tasks.
+                <h4 className="text-xs font-bold text-charcoal-950 dark:text-white">
+                  Mathematical Procrastination Score
+                </h4>
+                <p className="text-[11px] text-charcoal-500 dark:text-charcoal-400 mt-0.5">
+                  Tracks overdue backlog and delay taxes with real telemetry.
                 </p>
               </div>
             </div>
 
-            <div className="flex items-start gap-3 p-3.5 rounded-xl bg-slate-900/60 border border-slate-800/80">
-              <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0">
-                <ShieldCheck className="w-4 h-4" />
+            <div className="flex items-start gap-3 p-3.5 rounded-2xl bg-white dark:bg-charcoal-850 border border-cream-200 dark:border-charcoal-750 shadow-sm">
+              <div className="p-2 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 shrink-0">
+                <Zap className="w-4 h-4" />
               </div>
               <div>
-                <h2 className="text-xs font-semibold text-white">Cloud Authentication & Persistent Session</h2>
-                <p className="text-[11px] text-slate-400 mt-0.5">
-                  Secure email/password authentication powered by Supabase with persistent auth tokens.
+                <h4 className="text-xs font-bold text-charcoal-950 dark:text-white">
+                  Cloud Persistent Sessions
+                </h4>
+                <p className="text-[11px] text-charcoal-500 dark:text-charcoal-400 mt-0.5">
+                  Encrypted tokens and Row-Level Security guarantee user privacy.
                 </p>
               </div>
             </div>
-          </div>
-
-          {/* College Project Tag */}
-          <div className="text-[11px] text-slate-500 flex items-center gap-2 pt-2">
-            <Sparkles className="w-3.5 h-3.5 text-purple-400" />
-            <span>College DSA Mini Project • Sem 5 CSE Edition</span>
           </div>
         </div>
 
         {/* Right Side: Auth Form Card */}
         <div className="lg:col-span-7">
-          <div className="w-full max-w-md mx-auto bg-dark-950/85 backdrop-blur-2xl border border-slate-800/90 rounded-3xl p-6 sm:p-8 shadow-2xl shadow-black/50">
+          <div className="w-full max-w-md mx-auto bg-white dark:bg-charcoal-850 border border-cream-300 dark:border-charcoal-750 rounded-3xl p-6 sm:p-8 shadow-elevated">
             
-            {/* Header / Tabs */}
+            {/* Header & Tabs */}
             <div className="mb-6">
               {mode === 'forgot' ? (
                 <div className="flex items-center gap-2 mb-2">
                   <button
                     onClick={() => switchMode('login')}
-                    className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                    className="p-1 rounded-lg text-charcoal-500 hover:text-charcoal-900 dark:hover:text-white transition-colors cursor-pointer"
                   >
                     <ChevronLeft className="w-5 h-5" />
                   </button>
-                  <h2 className="text-xl font-bold text-white tracking-tight">Reset Password</h2>
+                  <h2 className="text-xl font-black text-charcoal-950 dark:text-white tracking-tight">
+                    Reset Password
+                  </h2>
                 </div>
               ) : (
-                <div className="flex items-center justify-between mb-4 border-b border-slate-800/80 pb-3">
+                <div className="flex items-center justify-between mb-4 border-b border-cream-200 dark:border-charcoal-800 pb-3">
                   <div>
-                    <h2 className="text-xl font-bold text-white tracking-tight">
+                    <h2 className="text-xl font-black text-charcoal-950 dark:text-white tracking-tight">
                       {mode === 'login' ? 'Welcome Back!' : 'Create an Account'}
                     </h2>
-                    <p className="text-xs text-slate-400 mt-0.5">
+                    <p className="text-xs text-charcoal-500 dark:text-charcoal-400 mt-0.5">
                       {mode === 'login'
-                        ? 'Sign in to access your priority queue & tasks'
-                        : 'Start tracking tasks and beating procrastination'}
+                        ? 'Sign in to access your priority queue'
+                        : 'Ready to beat procrastination for good?'}
                     </p>
                   </div>
 
-                  <div className="flex bg-slate-900 p-1 rounded-xl border border-slate-800">
+                  <div className="flex bg-cream-200 dark:bg-charcoal-800 p-1 rounded-xl border border-cream-300 dark:border-charcoal-700">
                     <button
                       type="button"
                       onClick={() => switchMode('login')}
-                      className={`text-xs font-medium px-3 py-1.5 rounded-lg transition-all ${
+                      className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
                         mode === 'login'
-                          ? 'bg-indigo-600 text-white shadow-sm'
-                          : 'text-slate-400 hover:text-white'
+                          ? 'bg-coral-500 text-white shadow-sm'
+                          : 'text-charcoal-600 dark:text-charcoal-300 hover:text-charcoal-950 dark:hover:text-white'
                       }`}
                     >
                       Login
@@ -283,10 +304,10 @@ const AuthView = () => {
                     <button
                       type="button"
                       onClick={() => switchMode('signup')}
-                      className={`text-xs font-medium px-3 py-1.5 rounded-lg transition-all ${
+                      className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
                         mode === 'signup'
-                          ? 'bg-indigo-600 text-white shadow-sm'
-                          : 'text-slate-400 hover:text-white'
+                          ? 'bg-coral-500 text-white shadow-sm'
+                          : 'text-charcoal-600 dark:text-charcoal-300 hover:text-charcoal-950 dark:hover:text-white'
                       }`}
                     >
                       Signup
@@ -296,50 +317,40 @@ const AuthView = () => {
               )}
             </div>
 
-            {/* Supabase unconfigured warning banner (safeguard) */}
-            {!isConfigured && (
-              <div className="mb-4 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex items-start gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                <div>
-                  <span className="font-semibold">Notice:</span> Supabase environment variables are missing in <code>.env</code>. Please configure <code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_ANON_KEY</code>.
-                </div>
-              </div>
-            )}
-
             {/* Error Message Alert */}
             {errorMsg && (
-              <div className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs flex items-start gap-2 animate-fadeIn">
-                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-red-400" />
+              <div className="mb-4 p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400 text-xs flex items-start gap-2 animate-fade-in font-medium">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
                 <span className="leading-relaxed">{errorMsg}</span>
               </div>
             )}
 
             {/* Success Message Alert */}
             {successMsg && (
-              <div className="mb-4 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-start gap-2 animate-fadeIn">
-                <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5 text-emerald-400" />
+              <div className="mb-4 p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs flex items-start gap-2 animate-fade-in font-medium">
+                <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
                 <span className="leading-relaxed">{successMsg}</span>
               </div>
             )}
 
-            {/* Auth Form */}
+            {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-4">
               
               {/* Full Name (Sign Up only) */}
               {mode === 'signup' && (
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1.5">
-                    Full Name <span className="text-red-400">*</span>
+                  <label className="block text-xs font-bold text-charcoal-700 dark:text-cream-200 mb-1.5">
+                    Full Name <span className="text-coral-500">*</span>
                   </label>
                   <div className="relative">
-                    <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <User className="w-4 h-4 text-charcoal-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                     <input
                       type="text"
                       placeholder="e.g. Aryan Sharma"
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
                       required
-                      className="w-full bg-slate-900/90 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
+                      className="w-full bg-cream-50 dark:bg-charcoal-800 border border-cream-300 dark:border-charcoal-700 rounded-xl pl-10 pr-4 py-2.5 text-xs text-charcoal-950 dark:text-cream-50 placeholder-charcoal-400 focus:outline-none focus:ring-2 focus:ring-coral-500/50 focus:border-coral-500 transition-all font-medium"
                     />
                   </div>
                 </div>
@@ -347,11 +358,11 @@ const AuthView = () => {
 
               {/* Email Input */}
               <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1.5">
-                  Email Address <span className="text-red-400">*</span>
+                <label className="block text-xs font-bold text-charcoal-700 dark:text-cream-200 mb-1.5">
+                  Email Address <span className="text-coral-500">*</span>
                 </label>
                 <div className="relative">
-                  <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <Mail className="w-4 h-4 text-charcoal-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
                     type="email"
                     placeholder="student@college.edu"
@@ -359,43 +370,43 @@ const AuthView = () => {
                     onChange={(e) => setEmail(e.target.value)}
                     required
                     autoComplete="email"
-                    className="w-full bg-slate-900/90 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
+                    className="w-full bg-cream-50 dark:bg-charcoal-800 border border-cream-300 dark:border-charcoal-700 rounded-xl pl-10 pr-4 py-2.5 text-xs text-charcoal-950 dark:text-cream-50 placeholder-charcoal-400 focus:outline-none focus:ring-2 focus:ring-coral-500/50 focus:border-coral-500 transition-all font-medium"
                   />
                 </div>
               </div>
 
-              {/* Password Input (Login & Signup) */}
+              {/* Password Input */}
               {mode !== 'forgot' && (
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
-                    <label className="block text-xs font-medium text-slate-300">
-                      Password <span className="text-red-400">*</span>
+                    <label className="block text-xs font-bold text-charcoal-700 dark:text-cream-200">
+                      Password <span className="text-coral-500">*</span>
                     </label>
                     {mode === 'login' && (
                       <button
                         type="button"
                         onClick={() => switchMode('forgot')}
-                        className="text-[11px] text-indigo-400 hover:text-indigo-300 font-medium transition-colors"
+                        className="text-[11px] text-coral-600 dark:text-coral-400 hover:underline font-bold transition-colors cursor-pointer"
                       >
                         Forgot password?
                       </button>
                     )}
                   </div>
                   <div className="relative">
-                    <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <Lock className="w-4 h-4 text-charcoal-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                     <input
                       type={showPassword ? 'text' : 'password'}
-                      placeholder={mode === 'signup' ? 'Minimum 6 characters' : 'Enter password'}
+                      placeholder={mode === 'signup' ? 'Min 6 characters' : 'Enter your password'}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
                       autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-                      className="w-full bg-slate-900/90 border border-slate-800 rounded-xl pl-10 pr-10 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
+                      className="w-full bg-cream-50 dark:bg-charcoal-800 border border-cream-300 dark:border-charcoal-700 rounded-xl pl-10 pr-10 py-2.5 text-xs text-charcoal-950 dark:text-cream-50 placeholder-charcoal-400 focus:outline-none focus:ring-2 focus:ring-coral-500/50 focus:border-coral-500 transition-all font-medium"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 transition-colors"
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-charcoal-400 hover:text-charcoal-600 dark:hover:text-cream-200 transition-colors cursor-pointer"
                     >
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
@@ -406,11 +417,11 @@ const AuthView = () => {
               {/* Confirm Password (Signup only) */}
               {mode === 'signup' && (
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1.5">
-                    Confirm Password <span className="text-red-400">*</span>
+                  <label className="block text-xs font-bold text-charcoal-700 dark:text-cream-200 mb-1.5">
+                    Confirm Password <span className="text-coral-500">*</span>
                   </label>
                   <div className="relative">
-                    <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <Lock className="w-4 h-4 text-charcoal-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                     <input
                       type={showConfirmPassword ? 'text' : 'password'}
                       placeholder="Re-enter password"
@@ -418,12 +429,12 @@ const AuthView = () => {
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       required
                       autoComplete="new-password"
-                      className="w-full bg-slate-900/90 border border-slate-800 rounded-xl pl-10 pr-10 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
+                      className="w-full bg-cream-50 dark:bg-charcoal-800 border border-cream-300 dark:border-charcoal-700 rounded-xl pl-10 pr-10 py-2.5 text-xs text-charcoal-950 dark:text-cream-50 placeholder-charcoal-400 focus:outline-none focus:ring-2 focus:ring-coral-500/50 focus:border-coral-500 transition-all font-medium"
                     />
                     <button
                       type="button"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 transition-colors"
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-charcoal-400 hover:text-charcoal-600 dark:hover:text-cream-200 transition-colors cursor-pointer"
                     >
                       {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
@@ -436,7 +447,7 @@ const AuthView = () => {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold text-xs shadow-lg shadow-indigo-600/30 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-coral-500 hover:bg-coral-600 text-white font-black text-xs shadow-coral-glow transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer active:scale-[0.98]"
                 >
                   {isLoading ? (
                     <>
@@ -455,7 +466,7 @@ const AuthView = () => {
                         {mode === 'login'
                           ? 'Sign In to Dashboard'
                           : mode === 'signup'
-                          ? 'Create Account'
+                          ? 'Create Free Account'
                           : 'Send Password Reset Link'}
                       </span>
                       <ArrowRight className="w-4 h-4" />
@@ -465,14 +476,14 @@ const AuthView = () => {
               </div>
             </form>
 
-            {/* Footer switcher */}
-            <div className="mt-6 pt-4 border-t border-slate-800/80 text-center">
+            {/* Bottom switcher */}
+            <div className="mt-6 pt-4 border-t border-cream-200 dark:border-charcoal-800 text-center">
               {mode === 'login' && (
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-charcoal-600 dark:text-charcoal-400">
                   Don't have an account yet?{' '}
                   <button
                     onClick={() => switchMode('signup')}
-                    className="text-indigo-400 hover:text-indigo-300 font-semibold transition-colors"
+                    className="text-coral-500 hover:underline font-extrabold transition-colors cursor-pointer"
                   >
                     Sign up now
                   </button>
@@ -480,11 +491,11 @@ const AuthView = () => {
               )}
 
               {mode === 'signup' && (
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-charcoal-600 dark:text-charcoal-400">
                   Already registered?{' '}
                   <button
                     onClick={() => switchMode('login')}
-                    className="text-indigo-400 hover:text-indigo-300 font-semibold transition-colors"
+                    className="text-coral-500 hover:underline font-extrabold transition-colors cursor-pointer"
                   >
                     Sign in here
                   </button>
@@ -494,7 +505,7 @@ const AuthView = () => {
               {mode === 'forgot' && (
                 <button
                   onClick={() => switchMode('login')}
-                  className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-200 font-medium transition-colors"
+                  className="inline-flex items-center gap-1.5 text-xs text-charcoal-600 dark:text-charcoal-300 hover:text-coral-500 font-bold transition-colors cursor-pointer"
                 >
                   <ChevronLeft className="w-4 h-4" />
                   <span>Back to Sign In</span>
@@ -507,13 +518,12 @@ const AuthView = () => {
 
       </div>
 
-      {/* Footer disclaimer */}
-      <div className="mt-8 text-center text-xs text-slate-500 z-10">
-        KAL SE PAKKA – Smart Procrastination & Task Management System • Built with React, Tailwind & Supabase
+      {/* Footer */}
+      <div className="mt-8 text-center text-xs text-charcoal-500 dark:text-charcoal-400 z-10">
+        KAL SE PAKKA • Powered by React, Vite, Tailwind & Supabase
       </div>
     </div>
   );
 };
 
 export default AuthView;
-

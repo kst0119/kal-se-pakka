@@ -9,6 +9,7 @@ import {
   SlidersHorizontal,
   ArrowUpDown,
   Inbox,
+  Flame,
 } from 'lucide-react';
 import { useTask } from '../../context/TaskContext';
 import { CATEGORIES } from '../../constants/initialTasks';
@@ -102,24 +103,24 @@ const MyTasksView = () => {
     selectedImportance !== 'All';
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
       {/* Top Controls Bar */}
-      <div className="bg-slate-900/80 rounded-2xl border border-slate-800/80 p-4 sm:p-5 shadow-card backdrop-blur-md space-y-4">
+      <div className="bg-white dark:bg-charcoal-850 rounded-3xl border border-cream-200 dark:border-charcoal-750 p-4 sm:p-5 shadow-card-light dark:shadow-card-dark space-y-4 transition-colors">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           {/* Search box */}
           <div className="relative flex-1">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-charcoal-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               placeholder="Search by title, description, or keyword..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-slate-800/70 border border-slate-700/70 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+              className="w-full bg-cream-50 dark:bg-charcoal-800 border border-cream-300 dark:border-charcoal-700 rounded-2xl pl-10 pr-4 py-2.5 text-xs sm:text-sm text-charcoal-950 dark:text-cream-50 placeholder-charcoal-400 focus:outline-none focus:ring-2 focus:ring-coral-500/50 font-medium"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-200"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-charcoal-400 hover:text-coral-500 cursor-pointer"
               >
                 Clear
               </button>
@@ -132,21 +133,21 @@ const MyTasksView = () => {
             <select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
-              className="bg-slate-800/80 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+              className="bg-cream-50 dark:bg-charcoal-800 border border-cream-300 dark:border-charcoal-700 rounded-xl px-3 py-2 text-xs font-bold text-charcoal-800 dark:text-cream-200 focus:outline-none focus:ring-2 focus:ring-coral-500/50 cursor-pointer"
             >
               <option value="All">All Statuses</option>
               <option value="Pending">Pending</option>
               <option value="In Progress">In Progress</option>
               <option value="Completed">Completed</option>
-              <option value="Overdue">Overdue</option>
-              <option value="Postponed">Postponed</option>
+              <option value="Overdue">Overdue ⚠️</option>
+              <option value="Postponed">Postponed ⏳</option>
             </select>
 
             {/* Importance Dropdown */}
             <select
               value={selectedImportance}
               onChange={(e) => setSelectedImportance(e.target.value)}
-              className="bg-slate-800/80 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+              className="bg-cream-50 dark:bg-charcoal-800 border border-cream-300 dark:border-charcoal-700 rounded-xl px-3 py-2 text-xs font-bold text-charcoal-800 dark:text-cream-200 focus:outline-none focus:ring-2 focus:ring-coral-500/50 cursor-pointer"
             >
               <option value="All">All Importance</option>
               <option value="High">High Priority</option>
@@ -155,40 +156,42 @@ const MyTasksView = () => {
             </select>
 
             {/* Sort Dropdown */}
-            <div className="flex items-center gap-1.5 bg-slate-800/80 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200">
-              <ArrowUpDown className="w-3.5 h-3.5 text-slate-400" />
+            <div className="flex items-center gap-1.5 bg-cream-50 dark:bg-charcoal-800 border border-cream-300 dark:border-charcoal-700 rounded-xl px-3 py-2 text-xs font-bold text-charcoal-800 dark:text-cream-200">
+              <ArrowUpDown className="w-3.5 h-3.5 text-coral-500" />
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="bg-transparent focus:outline-none cursor-pointer text-slate-200"
+                className="bg-transparent focus:outline-none cursor-pointer text-charcoal-800 dark:text-cream-200"
               >
-                <option value="priority-desc" className="bg-slate-900">⚡ Priority (Max Heap Order)</option>
-                <option value="deadline-asc" className="bg-slate-900">Deadline (Earliest)</option>
-                <option value="deadline-desc" className="bg-slate-900">Deadline (Latest)</option>
-                <option value="importance-desc" className="bg-slate-900">Priority (High to Low)</option>
-                <option value="duration-asc" className="bg-slate-900">Duration (Shortest)</option>
-                <option value="duration-desc" className="bg-slate-900">Duration (Longest)</option>
+                <option value="priority-desc">⚡ Priority (Max Heap Order)</option>
+                <option value="deadline-asc">Deadline (Earliest)</option>
+                <option value="deadline-desc">Deadline (Latest)</option>
+                <option value="importance-desc">Priority (High to Low)</option>
+                <option value="duration-asc">Duration (Shortest)</option>
+                <option value="duration-desc">Duration (Longest)</option>
               </select>
             </div>
 
             {/* View Mode Toggle (Grid vs Table) */}
-            <div className="flex items-center bg-slate-800/80 border border-slate-700 rounded-xl p-1">
+            <div className="flex items-center bg-cream-100 dark:bg-charcoal-800 border border-cream-300 dark:border-charcoal-700 rounded-xl p-1">
               <button
                 onClick={() => setViewMode('grid')}
-                className={`p-1.5 rounded-lg transition-colors ${viewMode === 'grid'
-                  ? 'bg-indigo-600 text-white shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
-                  }`}
+                className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                  viewMode === 'grid'
+                    ? 'bg-coral-500 text-white shadow-sm'
+                    : 'text-charcoal-400 hover:text-charcoal-900 dark:hover:text-white'
+                }`}
                 title="Grid view"
               >
                 <LayoutGrid className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setViewMode('table')}
-                className={`p-1.5 rounded-lg transition-colors ${viewMode === 'table'
-                  ? 'bg-indigo-600 text-white shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
-                  }`}
+                className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                  viewMode === 'table'
+                    ? 'bg-coral-500 text-white shadow-sm'
+                    : 'text-charcoal-400 hover:text-charcoal-900 dark:hover:text-white'
+                }`}
                 title="Table view"
               >
                 <List className="w-4 h-4" />
@@ -198,20 +201,21 @@ const MyTasksView = () => {
         </div>
 
         {/* Category Pills Bar */}
-        <div className="flex items-center justify-between gap-4 pt-2 border-t border-slate-800/70 overflow-x-auto pb-1">
+        <div className="flex items-center justify-between gap-4 pt-2 border-t border-cream-200 dark:border-charcoal-800 overflow-x-auto pb-1">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 mr-1 flex items-center gap-1">
-              <Filter className="w-3 h-3" />
+            <span className="text-[11px] font-black uppercase tracking-wider text-charcoal-400 mr-1 flex items-center gap-1">
+              <Filter className="w-3 h-3 text-coral-500" />
               Category:
             </span>
             {CATEGORIES.map((cat) => (
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
-                className={`px-3 py-1 rounded-xl text-xs font-medium whitespace-nowrap transition-all ${selectedCategory === cat
-                  ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/30'
-                  : 'bg-slate-800/60 text-slate-400 hover:text-slate-200 hover:bg-slate-800'
-                  }`}
+                className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+                  selectedCategory === cat
+                    ? 'bg-coral-500 text-white shadow-coral-glow'
+                    : 'bg-cream-100 dark:bg-charcoal-800 text-charcoal-600 dark:text-charcoal-300 hover:text-charcoal-950 dark:hover:text-white hover:bg-cream-200 dark:hover:bg-charcoal-750'
+                }`}
               >
                 {cat}
               </button>
@@ -221,7 +225,7 @@ const MyTasksView = () => {
           {hasActiveFilters && (
             <button
               onClick={resetFilters}
-              className="text-xs text-indigo-400 hover:text-indigo-300 font-medium whitespace-nowrap flex items-center gap-1 transition-colors"
+              className="text-xs text-coral-600 dark:text-coral-400 hover:underline font-extrabold whitespace-nowrap flex items-center gap-1 transition-colors cursor-pointer"
             >
               <RotateCcw className="w-3 h-3" />
               Reset Filters
@@ -230,10 +234,10 @@ const MyTasksView = () => {
         </div>
       </div>
 
-      {/* Task Count & Quick Info Bar */}
+      {/* Task Count Bar */}
       <div className="flex items-center justify-between px-1">
-        <div className="text-sm text-slate-400">
-          Showing <span className="font-semibold text-white font-mono">{filteredTasks.length}</span>{' '}
+        <div className="text-xs sm:text-sm font-medium text-charcoal-500 dark:text-charcoal-400">
+          Showing <span className="font-black text-charcoal-950 dark:text-white font-mono">{filteredTasks.length}</span>{' '}
           {filteredTasks.length === 1 ? 'task' : 'tasks'}
           {hasActiveFilters && ' (filtered)'}
         </div>
@@ -243,6 +247,7 @@ const MyTasksView = () => {
           size="sm"
           icon={Plus}
           onClick={() => setActiveTab('add-task')}
+          className="shadow-coral-glow"
         >
           Add Task
         </Button>
@@ -250,13 +255,15 @@ const MyTasksView = () => {
 
       {/* Main View: Grid vs Table vs Empty State */}
       {filteredTasks.length === 0 ? (
-        <div className="bg-slate-900/40 rounded-2xl border border-slate-800 p-12 text-center flex flex-col items-center justify-center">
-          <div className="w-14 h-14 rounded-2xl bg-slate-800/80 border border-slate-700/80 flex items-center justify-center text-slate-400 mb-4">
-            <Inbox className="w-7 h-7 text-indigo-400" />
+        <div className="bg-white dark:bg-charcoal-850 rounded-3xl border border-cream-200 dark:border-charcoal-750 p-12 text-center flex flex-col items-center justify-center shadow-card-light dark:shadow-card-dark">
+          <div className="w-16 h-16 rounded-3xl bg-cream-200 dark:bg-charcoal-800 flex items-center justify-center text-3xl mb-4 shadow-sm">
+            🤔
           </div>
-          <h3 className="text-lg font-bold text-white mb-1">No tasks match your filter criteria</h3>
-          <p className="text-sm text-slate-400 max-w-sm mb-6">
-            Try adjusting your search terms, changing the category, or clear active filters.
+          <h3 className="text-lg font-black text-charcoal-950 dark:text-white mb-1">
+            Zero tasks match your filter criteria
+          </h3>
+          <p className="text-xs sm:text-sm text-charcoal-500 dark:text-charcoal-400 max-w-sm mb-6 font-medium">
+            Either you're in complete god mode with zero tasks, or your filters are a bit too strict, bestie!
           </p>
           <div className="flex items-center gap-3">
             {hasActiveFilters && (
@@ -269,6 +276,7 @@ const MyTasksView = () => {
               size="md"
               icon={Plus}
               onClick={() => setActiveTab('add-task')}
+              className="shadow-coral-glow"
             >
               Create New Task
             </Button>
@@ -288,4 +296,3 @@ const MyTasksView = () => {
 };
 
 export default MyTasksView;
-

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Calendar,
   Clock,
@@ -13,8 +13,11 @@ import {
   GraduationCap,
   User,
   MoreHorizontal,
+  Zap,
+  Flame,
 } from 'lucide-react';
 import { useTask } from '../../context/TaskContext';
+import { calculatePriorityScore } from '../../dsa/priorityCalculator';
 import Card from '../common/Card';
 import Button from '../common/Button';
 
@@ -43,40 +46,52 @@ const AddTaskView = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const categories = [
-    { id: 'Assignment', label: 'Assignment', icon: BookOpen, desc: 'Lab work, Problem sets' },
-    { id: 'Project', label: 'Project', icon: FolderGit2, desc: 'Mini-project, Codebase' },
-    { id: 'Exam', label: 'Exam', icon: GraduationCap, desc: 'Mid-term, Final exam revision' },
-    { id: 'Personal', label: 'Personal', icon: User, desc: 'LeetCode, Resume, Skills' },
-    { id: 'Other', label: 'Other', icon: MoreHorizontal, desc: 'Registration, Miscellaneous' },
+    { id: 'Assignment', label: 'Assignment', icon: BookOpen, desc: 'Lab work & problems' },
+    { id: 'Project', label: 'Project', icon: FolderGit2, desc: 'Mini-project & code' },
+    { id: 'Exam', label: 'Exam', icon: GraduationCap, desc: 'Mid-term & finals' },
+    { id: 'Personal', label: 'Personal', icon: User, desc: 'LeetCode & resume' },
+    { id: 'Other', label: 'Other', icon: MoreHorizontal, desc: 'Miscellaneous' },
   ];
 
   const importanceLevels = [
-    { id: 'Low', label: 'Low', desc: 'Can be done flexibly', color: 'border-sky-500/40 text-sky-300 bg-sky-500/10' },
-    { id: 'Medium', label: 'Medium', desc: 'Standard coursework deadline', color: 'border-amber-500/40 text-amber-300 bg-amber-500/10' },
-    { id: 'High', label: 'High', desc: 'Urgent submission or heavy weightage', color: 'border-rose-500/40 text-rose-300 bg-rose-500/10' },
+    { id: 'Low', label: 'Low', desc: 'Can be done flexibly', color: 'border-lime-500/40 text-lime-800 dark:text-lime-300 bg-lime-500/10' },
+    { id: 'Medium', label: 'Medium', desc: 'Standard coursework', color: 'border-amber-500/40 text-amber-700 dark:text-amber-300 bg-amber-500/10' },
+    { id: 'High', label: 'High', desc: 'Urgent submission', color: 'border-coral-500/40 text-coral-600 dark:text-coral-400 bg-coral-500/10' },
   ];
 
   const durationPresets = [0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0];
+
+  // Live Priority Score Preview (Calculated dynamically via DSA priorityCalculator)
+  const previewPriority = useMemo(() => {
+    try {
+      const calc = calculatePriorityScore({
+        deadline: formData.deadline,
+        importance: formData.importance,
+        duration: formData.duration || 1.0,
+      });
+      return calc;
+    } catch (e) {
+      return { priorityScore: 50, urgencyScore: 50, importanceScore: 50, effortScore: 50 };
+    }
+  }, [formData.deadline, formData.importance, formData.duration]);
 
   const validate = () => {
     const newErrors = {};
     const trimmedTitle = formData.title.trim();
 
-    // 1. Mandatory title validation & duplicate prevention
     if (!trimmedTitle) {
       newErrors.title = 'Task title is mandatory';
     } else if (trimmedTitle.length < 3) {
       newErrors.title = 'Task title must be at least 3 characters';
     } else {
       const duplicate = tasks.find(
-        t => t.status !== 'Completed' && t.title.trim().toLowerCase() === trimmedTitle.toLowerCase()
+        (t) => t.status !== 'Completed' && t.title.trim().toLowerCase() === trimmedTitle.toLowerCase()
       );
       if (duplicate) {
         newErrors.title = 'A pending task with this title already exists. Please choose a distinct title.';
       }
     }
 
-    // 2. Deadline validation
     if (!formData.deadline) {
       newErrors.deadline = 'A valid deadline date and time is mandatory';
     } else {
@@ -86,12 +101,10 @@ const AddTaskView = () => {
       }
     }
 
-    // 3. Importance validation
     if (!['Low', 'Medium', 'High'].includes(formData.importance)) {
       newErrors.importance = 'Please select a valid importance level';
     }
 
-    // 4. Estimated effort validation
     const durationNum = parseFloat(formData.duration);
     if (isNaN(durationNum) || durationNum <= 0) {
       newErrors.duration = 'Estimated effort must be greater than 0 hours';
@@ -127,7 +140,6 @@ const AddTaskView = () => {
       return;
     }
 
-    // Reset and navigate to tasks view
     setTimeout(() => {
       setIsSubmitting(false);
       setActiveTab('tasks');
@@ -147,48 +159,76 @@ const AddTaskView = () => {
     setErrors({});
   };
 
-  // Quick preset deadline setter
   const applyQuickDeadline = (hoursAhead) => {
     const d = new Date(Date.now() + hoursAhead * 60 * 60 * 1000);
-    setFormData(prev => ({ ...prev, deadline: d.toISOString().slice(0, 16) }));
+    setFormData((prev) => ({ ...prev, deadline: d.toISOString().slice(0, 16) }));
   };
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950/30 to-purple-950/20 rounded-2xl border border-slate-800 p-6 sm:p-7 shadow-card">
-        <div className="flex items-center gap-3 mb-2">
-          <div className="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-            <Sparkles className="w-5 h-5 text-purple-400" />
+    <div className="max-w-3xl mx-auto space-y-6 animate-fade-in">
+      <div className="bg-white dark:bg-charcoal-850 rounded-3xl border border-cream-200 dark:border-charcoal-750 p-6 sm:p-8 shadow-card-light dark:shadow-card-dark transition-colors">
+        
+        {/* Header */}
+        <div className="flex items-center gap-3 mb-6 pb-4 border-b border-cream-200 dark:border-charcoal-800">
+          <div className="p-2.5 rounded-2xl bg-coral-500/10 text-coral-500">
+            <Flame className="w-5 h-5 text-coral-500" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-white tracking-tight">Create New Task</h2>
-            <p className="text-xs text-slate-400">
-              Schedule academic assignments and goals. The scheduler prioritizes them against your deadlines.
+            <h2 className="text-xl sm:text-2xl font-black text-charcoal-950 dark:text-white tracking-tight">
+              Schedule New Task
+            </h2>
+            <p className="text-xs text-charcoal-500 dark:text-charcoal-400 font-medium mt-0.5">
+              The Max Heap Priority Queue will dynamically calculate urgency and schedule your task.
             </p>
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="mt-6 space-y-6">
+        {/* Live Priority Calculator Preview Widget */}
+        <div className="mb-6 p-4 rounded-2xl bg-cream-50 dark:bg-charcoal-900 border border-cream-300 dark:border-charcoal-750 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-lime-400 text-charcoal-950 flex items-center justify-center font-black text-lg shadow-lime-glow shrink-0">
+              ⚡
+            </div>
+            <div>
+              <div className="text-[11px] font-black uppercase tracking-wider text-charcoal-400">
+                Live Heap Priority Preview
+              </div>
+              <div className="text-xs font-bold text-charcoal-700 dark:text-cream-200">
+                Urgency (50%) + Importance (30%) + Effort (20%)
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-charcoal-500 font-medium hidden sm:inline">Calculated Score:</span>
+            <span className="text-base font-black px-3 py-1 rounded-full bg-coral-500 text-white font-mono shadow-sm">
+              {previewPriority.priorityScore.toFixed(1)} / 100
+            </span>
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
           {/* 1. Task Title */}
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
-              Task Title <span className="text-rose-400">*</span>
+            <label className="block text-xs font-bold uppercase tracking-wider text-charcoal-700 dark:text-cream-200 mb-2">
+              Task Title <span className="text-coral-500">*</span>
             </label>
             <input
               type="text"
-              placeholder="e.g., Implement Dijkstra's Algorithm in C++ with priority queue"
+              placeholder="e.g., Implement AVL Tree rotations in C++ with test cases"
               value={formData.title}
               onChange={(e) => {
                 setFormData({ ...formData, title: e.target.value });
                 if (errors.title) setErrors({ ...errors, title: null });
               }}
-              className={`w-full bg-slate-800/80 border rounded-xl px-4 py-3 text-sm text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 ${errors.title
-                ? 'border-rose-500/80 focus:ring-rose-500/50'
-                : 'border-slate-700/80 focus:ring-indigo-500/50 focus:border-indigo-500/50'
-                }`}
+              className={`w-full bg-cream-50 dark:bg-charcoal-800 border rounded-2xl px-4 py-3 text-xs sm:text-sm text-charcoal-950 dark:text-cream-50 placeholder-charcoal-400 focus:outline-none focus:ring-2 font-medium ${
+                errors.title
+                  ? 'border-rose-500 focus:ring-rose-500/50'
+                  : 'border-cream-300 dark:border-charcoal-700 focus:ring-coral-500/50 focus:border-coral-500'
+              }`}
             />
             {errors.title && (
-              <p className="mt-1.5 text-xs text-rose-400 flex items-center gap-1">
+              <p className="mt-1.5 text-xs text-rose-500 flex items-center gap-1 font-bold">
                 <AlertCircle className="w-3.5 h-3.5" />
                 {errors.title}
               </p>
@@ -197,22 +237,22 @@ const AddTaskView = () => {
 
           {/* 2. Description */}
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
-              Description <span className="text-slate-500 text-[11px] font-normal normal-case">(optional)</span>
+            <label className="block text-xs font-bold uppercase tracking-wider text-charcoal-700 dark:text-cream-200 mb-2">
+              Description <span className="text-charcoal-400 text-[11px] font-normal normal-case">(optional)</span>
             </label>
             <textarea
               rows={3}
               placeholder="Add key requirements, instructions from professor, or test cases to cover..."
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full bg-slate-800/80 border border-slate-700/80 rounded-xl px-4 py-3 text-sm text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+              className="w-full bg-cream-50 dark:bg-charcoal-800 border border-cream-300 dark:border-charcoal-700 rounded-2xl px-4 py-3 text-xs sm:text-sm text-charcoal-950 dark:text-cream-50 placeholder-charcoal-400 focus:outline-none focus:ring-2 focus:ring-coral-500/50 font-medium"
             />
           </div>
 
           {/* 3. Category Selector */}
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2.5">
-              Category <span className="text-rose-400">*</span>
+            <label className="block text-xs font-bold uppercase tracking-wider text-charcoal-700 dark:text-cream-200 mb-2.5">
+              Category <span className="text-coral-500">*</span>
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
               {categories.map((cat) => {
@@ -224,15 +264,16 @@ const AddTaskView = () => {
                     key={cat.id}
                     type="button"
                     onClick={() => setFormData({ ...formData, category: cat.id })}
-                    className={`p-3 rounded-xl border text-left flex flex-col justify-between transition-all ${isSelected
-                      ? 'border-indigo-500 bg-indigo-500/15 text-white ring-1 ring-indigo-500/50'
-                      : 'border-slate-800 bg-slate-800/50 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
-                      }`}
+                    className={`p-3 rounded-2xl border text-left flex flex-col justify-between transition-all cursor-pointer ${
+                      isSelected
+                        ? 'border-coral-500 bg-coral-500/10 text-coral-600 dark:text-coral-400 ring-2 ring-coral-500/30'
+                        : 'border-cream-200 dark:border-charcoal-750 bg-cream-50 dark:bg-charcoal-800 text-charcoal-600 dark:text-charcoal-400 hover:border-coral-400'
+                    }`}
                   >
-                    <Icon className={`w-4 h-4 mb-2 ${isSelected ? 'text-indigo-400' : 'text-slate-400'}`} />
+                    <Icon className={`w-4 h-4 mb-2 ${isSelected ? 'text-coral-500' : 'text-charcoal-400'}`} />
                     <div>
-                      <div className="font-semibold text-xs text-slate-200">{cat.label}</div>
-                      <div className="text-[10px] text-slate-400 leading-tight truncate">{cat.desc}</div>
+                      <div className="font-bold text-xs text-charcoal-900 dark:text-cream-100">{cat.label}</div>
+                      <div className="text-[10px] text-charcoal-400 leading-tight truncate">{cat.desc}</div>
                     </div>
                   </button>
                 );
@@ -243,53 +284,52 @@ const AddTaskView = () => {
           {/* 4. Deadline with Date & Time */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300">
-                Deadline Date & Time <span className="text-rose-400">*</span>
+              <label className="block text-xs font-bold uppercase tracking-wider text-charcoal-700 dark:text-cream-200">
+                Deadline Date & Time <span className="text-coral-500">*</span>
               </label>
 
               {/* Quick shortcut presets */}
-              <div className="hidden sm:flex items-center gap-1.5 text-[11px] text-slate-400">
+              <div className="hidden sm:flex items-center gap-1.5 text-[11px] text-charcoal-500">
                 <span>Presets:</span>
                 <button
                   type="button"
                   onClick={() => applyQuickDeadline(6)}
-                  className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-indigo-300"
+                  className="px-2 py-0.5 rounded-lg bg-cream-200 dark:bg-charcoal-800 hover:bg-cream-300 dark:hover:bg-charcoal-750 text-coral-600 dark:text-coral-400 font-bold cursor-pointer"
                 >
                   +6 Hours
                 </button>
                 <button
                   type="button"
                   onClick={() => applyQuickDeadline(24)}
-                  className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-indigo-300"
+                  className="px-2 py-0.5 rounded-lg bg-cream-200 dark:bg-charcoal-800 hover:bg-cream-300 dark:hover:bg-charcoal-750 text-coral-600 dark:text-coral-400 font-bold cursor-pointer"
                 >
                   Tomorrow
                 </button>
                 <button
                   type="button"
                   onClick={() => applyQuickDeadline(72)}
-                  className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-indigo-300"
+                  className="px-2 py-0.5 rounded-lg bg-cream-200 dark:bg-charcoal-800 hover:bg-cream-300 dark:hover:bg-charcoal-750 text-coral-600 dark:text-coral-400 font-bold cursor-pointer"
                 >
                   +3 Days
                 </button>
               </div>
             </div>
 
-            <div className="relative">
-              <input
-                type="datetime-local"
-                value={formData.deadline}
-                onChange={(e) => {
-                  setFormData({ ...formData, deadline: e.target.value });
-                  if (errors.deadline) setErrors({ ...errors, deadline: null });
-                }}
-                className={`w-full bg-slate-800/80 border rounded-xl px-4 py-2.5 text-sm text-slate-100 focus:outline-none focus:ring-2 ${errors.deadline
-                  ? 'border-rose-500/80 focus:ring-rose-500/50'
-                  : 'border-slate-700/80 focus:ring-indigo-500/50'
-                  }`}
-              />
-            </div>
+            <input
+              type="datetime-local"
+              value={formData.deadline}
+              onChange={(e) => {
+                setFormData({ ...formData, deadline: e.target.value });
+                if (errors.deadline) setErrors({ ...errors, deadline: null });
+              }}
+              className={`w-full bg-cream-50 dark:bg-charcoal-800 border rounded-2xl px-4 py-3 text-xs sm:text-sm text-charcoal-950 dark:text-cream-50 focus:outline-none focus:ring-2 font-medium ${
+                errors.deadline
+                  ? 'border-rose-500 focus:ring-rose-500/50'
+                  : 'border-cream-300 dark:border-charcoal-700 focus:ring-coral-500/50'
+              }`}
+            />
             {errors.deadline && (
-              <p className="mt-1.5 text-xs text-rose-400 flex items-center gap-1">
+              <p className="mt-1.5 text-xs text-rose-500 flex items-center gap-1 font-bold">
                 <AlertCircle className="w-3.5 h-3.5" />
                 {errors.deadline}
               </p>
@@ -298,8 +338,8 @@ const AddTaskView = () => {
 
           {/* 5. Importance Level */}
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2.5">
-              Importance / Priority Level <span className="text-rose-400">*</span>
+            <label className="block text-xs font-bold uppercase tracking-wider text-charcoal-700 dark:text-cream-200 mb-2.5">
+              Importance / Weightage <span className="text-coral-500">*</span>
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {importanceLevels.map((lvl) => {
@@ -310,26 +350,27 @@ const AddTaskView = () => {
                     key={lvl.id}
                     type="button"
                     onClick={() => setFormData({ ...formData, importance: lvl.id })}
-                    className={`p-3.5 rounded-xl border text-left transition-all ${isSelected
-                      ? `${lvl.color} ring-1 ring-current`
-                      : 'border-slate-800 bg-slate-800/40 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
-                      }`}
+                    className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer ${
+                      isSelected
+                        ? `${lvl.color} ring-2 ring-current font-bold`
+                        : 'border-cream-200 dark:border-charcoal-750 bg-cream-50 dark:bg-charcoal-800 text-charcoal-600 dark:text-charcoal-400 hover:border-coral-400'
+                    }`}
                   >
                     <div className="flex items-center justify-between mb-1">
-                      <span className="font-bold text-sm text-slate-200">{lvl.label} Priority</span>
+                      <span className="font-extrabold text-sm text-charcoal-900 dark:text-cream-50">{lvl.label} Priority</span>
                       {isSelected && <CheckCircle2 className="w-4 h-4" />}
                     </div>
-                    <p className="text-xs text-slate-400">{lvl.desc}</p>
+                    <p className="text-xs text-charcoal-500 dark:text-charcoal-400">{lvl.desc}</p>
                   </button>
                 );
               })}
             </div>
           </div>
 
-          {/* 6. Estimated Completion Time (Hours) */}
+          {/* 6. Estimated Duration (Hours) */}
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
-              Estimated Completion Time (Hours) <span className="text-rose-400">*</span>
+            <label className="block text-xs font-bold uppercase tracking-wider text-charcoal-700 dark:text-cream-200 mb-2">
+              Estimated Completion Time (Hours) <span className="text-coral-500">*</span>
             </label>
             <div className="flex flex-col sm:flex-row sm:items-center gap-3">
               <div className="relative w-full sm:w-44">
@@ -343,28 +384,30 @@ const AddTaskView = () => {
                     setFormData({ ...formData, duration: parseFloat(e.target.value) || '' });
                     if (errors.duration) setErrors({ ...errors, duration: null });
                   }}
-                  className={`w-full bg-slate-800/80 border rounded-xl px-4 py-2.5 text-sm font-mono text-slate-100 focus:outline-none focus:ring-2 ${errors.duration
-                    ? 'border-rose-500/80 focus:ring-rose-500/50'
-                    : 'border-slate-700/80 focus:ring-indigo-500/50'
-                    }`}
+                  className={`w-full bg-cream-50 dark:bg-charcoal-800 border rounded-2xl px-4 py-3 text-sm font-mono font-bold text-charcoal-950 dark:text-cream-50 focus:outline-none focus:ring-2 ${
+                    errors.duration
+                      ? 'border-rose-500 focus:ring-rose-500/50'
+                      : 'border-cream-300 dark:border-charcoal-700 focus:ring-coral-500/50'
+                  }`}
                 />
-                <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-slate-400">
+                <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-charcoal-400">
                   hrs
                 </span>
               </div>
 
               {/* Quick selector pills */}
               <div className="flex flex-wrap items-center gap-1.5">
-                <span className="text-xs text-slate-500 mr-1">Quick:</span>
+                <span className="text-xs font-bold text-charcoal-400 mr-1">Quick:</span>
                 {durationPresets.map((preset) => (
                   <button
                     key={preset}
                     type="button"
                     onClick={() => setFormData({ ...formData, duration: preset })}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-mono font-medium border transition-colors ${formData.duration === preset
-                      ? 'bg-indigo-600 border-indigo-500 text-white'
-                      : 'bg-slate-800/70 border-slate-700/70 text-slate-400 hover:text-slate-200'
-                      }`}
+                    className={`px-2.5 py-1 rounded-xl text-xs font-mono font-bold border transition-colors cursor-pointer ${
+                      formData.duration === preset
+                        ? 'bg-coral-500 border-coral-500 text-white shadow-sm'
+                        : 'bg-cream-100 dark:bg-charcoal-800 border-cream-300 dark:border-charcoal-700 text-charcoal-600 dark:text-charcoal-400 hover:border-coral-400'
+                    }`}
                   >
                     {preset}h
                   </button>
@@ -372,7 +415,7 @@ const AddTaskView = () => {
               </div>
             </div>
             {errors.duration && (
-              <p className="mt-1.5 text-xs text-rose-400 flex items-center gap-1">
+              <p className="mt-1.5 text-xs text-rose-500 flex items-center gap-1 font-bold">
                 <AlertCircle className="w-3.5 h-3.5" />
                 {errors.duration}
               </p>
@@ -380,11 +423,11 @@ const AddTaskView = () => {
           </div>
 
           {/* Form Action Buttons */}
-          <div className="pt-4 border-t border-slate-800/80 flex items-center justify-between">
+          <div className="pt-4 border-t border-cream-200 dark:border-charcoal-800 flex items-center justify-between">
             <button
               type="button"
               onClick={handleReset}
-              className="px-4 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors flex items-center gap-1.5"
+              className="px-4 py-2 rounded-xl text-xs font-bold text-charcoal-500 hover:text-charcoal-900 dark:hover:text-white transition-colors flex items-center gap-1.5 cursor-pointer"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               Reset Form
@@ -404,8 +447,9 @@ const AddTaskView = () => {
                 variant="primary"
                 size="md"
                 disabled={isSubmitting}
+                className="shadow-coral-glow"
               >
-                {isSubmitting ? 'Adding...' : 'Schedule Task'}
+                {isSubmitting ? 'Scheduling in Cloud...' : 'Schedule Task'}
               </Button>
             </div>
           </div>
@@ -416,4 +460,3 @@ const AddTaskView = () => {
 };
 
 export default AddTaskView;
-

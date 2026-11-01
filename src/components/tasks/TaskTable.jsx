@@ -8,21 +8,21 @@ const TaskTable = ({ tasks }) => {
   const { toggleTaskStatus, deleteTask, setPostponeModalTask, setEditModalTask } = useTask();
 
   return (
-    <div className="overflow-x-auto rounded-2xl border border-slate-800 bg-slate-900/60 backdrop-blur-md">
+    <div className="overflow-x-auto rounded-3xl border border-cream-200 dark:border-charcoal-750 bg-white dark:bg-charcoal-850 shadow-card-light dark:shadow-card-dark">
       <table className="w-full text-left border-collapse">
         <thead>
-          <tr className="border-b border-slate-800 text-[11px] font-semibold uppercase tracking-wider text-slate-400 bg-slate-950/40">
+          <tr className="border-b border-cream-200 dark:border-charcoal-800 text-[11px] font-black uppercase tracking-wider text-charcoal-500 dark:text-charcoal-400 bg-cream-50/70 dark:bg-charcoal-900/60">
             <th className="py-3.5 px-4">Task</th>
             <th className="py-3.5 px-4">Category</th>
             <th className="py-3.5 px-4">Deadline</th>
             <th className="py-3.5 px-4">Importance</th>
-            <th className="py-3.5 px-4">Priority (DSA)</th>
-            <th className="py-3.5 px-4">Est. Duration</th>
+            <th className="py-3.5 px-4">Priority (Heap)</th>
+            <th className="py-3.5 px-4">Duration</th>
             <th className="py-3.5 px-4">Status</th>
             <th className="py-3.5 px-4 text-right">Actions</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-800/80 text-sm">
+        <tbody className="divide-y divide-cream-100 dark:divide-charcoal-800/80 text-xs sm:text-sm">
           {tasks.map((task) => {
             const isCompleted = task.status === 'Completed';
             const taskOverdue = isOverdue(task.deadline, task.status);
@@ -31,8 +31,8 @@ const TaskTable = ({ tasks }) => {
               <tr
                 key={task.id}
                 className={`
-                  transition-colors hover:bg-slate-800/40
-                  ${isCompleted ? 'opacity-60 bg-slate-900/30' : ''}
+                  transition-colors hover:bg-cream-50/80 dark:hover:bg-charcoal-800/50
+                  ${isCompleted ? 'opacity-60 bg-cream-100/30 dark:bg-charcoal-900/30' : ''}
                 `}
               >
                 {/* Title & Description */}
@@ -40,24 +40,24 @@ const TaskTable = ({ tasks }) => {
                   <div className="flex items-start gap-2.5">
                     <button
                       onClick={() => toggleTaskStatus(task.id)}
-                      className="mt-0.5 text-slate-400 hover:text-indigo-400 transition-colors shrink-0"
+                      className="mt-0.5 text-charcoal-400 hover:text-coral-500 transition-colors shrink-0 cursor-pointer"
                     >
                       {isCompleted ? (
-                        <CheckCircle2 className="w-4 h-4 text-emerald-400 fill-emerald-500/20" />
+                        <CheckCircle2 className="w-4 h-4 text-lime-500" />
                       ) : (
-                        <Circle className="w-4 h-4 hover:text-indigo-400" />
+                        <Circle className="w-4 h-4 hover:text-coral-500" />
                       )}
                     </button>
                     <div>
                       <div
-                        className={`font-semibold text-slate-200 line-clamp-1 ${
-                          isCompleted ? 'line-through text-slate-400' : ''
+                        className={`font-bold text-charcoal-950 dark:text-cream-50 line-clamp-1 ${
+                          isCompleted ? 'line-through text-charcoal-400 dark:text-charcoal-500' : ''
                         }`}
                       >
                         {task.title}
                       </div>
                       {task.description && (
-                        <div className="text-xs text-slate-400 line-clamp-1 mt-0.5">
+                        <div className="text-[11px] text-charcoal-500 dark:text-charcoal-400 line-clamp-1 mt-0.5">
                           {task.description}
                         </div>
                       )}
@@ -72,15 +72,11 @@ const TaskTable = ({ tasks }) => {
 
                 {/* Deadline */}
                 <td className="py-3.5 px-4 whitespace-nowrap">
-                  <div className="text-xs font-mono text-slate-200">
-                    {formatDate(task.deadline)}
-                  </div>
-                  <div
-                    className={`text-[11px] font-medium ${
-                      taskOverdue ? 'text-rose-400' : 'text-slate-400'
-                    }`}
-                  >
-                    {getRelativeTimeDescription(task.deadline, task.status)}
+                  <div className="flex items-center gap-1.5 text-xs">
+                    <Calendar className={`w-3.5 h-3.5 ${taskOverdue ? 'text-rose-500' : 'text-coral-500'}`} />
+                    <span className={`font-bold ${taskOverdue ? 'text-rose-600 dark:text-rose-400' : 'text-charcoal-800 dark:text-cream-200'}`}>
+                      {formatDate(task.deadline)}
+                    </span>
                   </div>
                 </td>
 
@@ -89,24 +85,21 @@ const TaskTable = ({ tasks }) => {
                   <ImportanceBadge importance={task.importance} />
                 </td>
 
-                {/* Priority Score (DSA) */}
+                {/* Priority */}
                 <td className="py-3.5 px-4 whitespace-nowrap">
                   {task.priority !== undefined ? (
-                    <span
-                      className="inline-flex items-center gap-1 text-xs font-mono font-bold px-2.5 py-1 rounded-lg bg-purple-500/15 text-purple-300 border border-purple-500/30"
-                      title="Priority Score: 0.5×Urgency + 0.3×Importance + 0.2×Effort"
-                    >
-                      <Zap className="w-3.5 h-3.5 text-amber-400" />
+                    <span className="inline-flex items-center gap-1 text-[11px] font-mono font-black px-2 py-0.5 rounded-md bg-lime-400 text-charcoal-950">
+                      <Zap className="w-3 h-3 text-charcoal-950" />
                       {task.priority.toFixed(1)}
                     </span>
                   ) : (
-                    <span className="text-xs text-slate-500">—</span>
+                    <span className="text-charcoal-400">—</span>
                   )}
                 </td>
 
                 {/* Duration */}
-                <td className="py-3.5 px-4 whitespace-nowrap font-mono text-xs text-slate-300">
-                  {task.duration} hrs
+                <td className="py-3.5 px-4 whitespace-nowrap font-mono text-xs font-bold text-charcoal-700 dark:text-cream-300">
+                  {task.duration}h
                 </td>
 
                 {/* Status */}
@@ -116,11 +109,11 @@ const TaskTable = ({ tasks }) => {
 
                 {/* Actions */}
                 <td className="py-3.5 px-4 text-right whitespace-nowrap">
-                  <div className="inline-flex items-center gap-1.5 justify-end">
+                  <div className="flex items-center justify-end gap-1">
                     <button
                       onClick={() => setEditModalTask(task)}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-300 hover:bg-slate-800 transition-colors"
-                      title="Edit Task Details"
+                      className="p-1.5 rounded-lg text-charcoal-400 hover:text-charcoal-900 dark:hover:text-white hover:bg-cream-200 dark:hover:bg-charcoal-750 transition-colors cursor-pointer"
+                      title="Edit"
                     >
                       <Edit3 className="w-4 h-4" />
                     </button>
@@ -128,29 +121,17 @@ const TaskTable = ({ tasks }) => {
                     {!isCompleted && (
                       <button
                         onClick={() => setPostponeModalTask(task)}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-amber-300 hover:bg-slate-800 transition-colors"
-                        title="Postpone Task (Kal Se Pakka)"
+                        className="p-1.5 rounded-lg text-charcoal-400 hover:text-amber-500 hover:bg-cream-200 dark:hover:bg-charcoal-750 transition-colors cursor-pointer"
+                        title="Postpone"
                       >
                         <Hourglass className="w-4 h-4" />
                       </button>
                     )}
 
                     <button
-                      onClick={() => toggleTaskStatus(task.id)}
-                      className={`p-1.5 rounded-lg transition-colors ${
-                        isCompleted
-                          ? 'text-slate-400 hover:text-indigo-400 hover:bg-slate-800'
-                          : 'text-slate-400 hover:text-emerald-400 hover:bg-slate-800'
-                      }`}
-                      title={isCompleted ? 'Mark Pending' : 'Mark Completed'}
-                    >
-                      <CheckCircle2 className="w-4 h-4" />
-                    </button>
-
-                    <button
                       onClick={() => deleteTask(task.id)}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition-colors"
-                      title="Delete Task"
+                      className="p-1.5 rounded-lg text-charcoal-400 hover:text-rose-500 hover:bg-cream-200 dark:hover:bg-charcoal-750 transition-colors cursor-pointer"
+                      title="Delete"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -166,4 +147,3 @@ const TaskTable = ({ tasks }) => {
 };
 
 export default TaskTable;
-

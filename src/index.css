@@ -3,63 +3,77 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --bg-primary: #FAF7F2;
+    --text-primary: #111216;
+  }
+
+  html.dark {
+    --bg-primary: #111216;
+    --text-primary: #FAF7F2;
+  }
+
   * {
-    border-color: rgba(255, 255, 255, 0.08);
+    border-color: rgba(140, 145, 160, 0.15);
   }
 
   body {
-    background-color: #0B0F19;
-    color: #F1F5F9;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
     overflow-x: hidden;
+    transition: background-color 0.25s ease, color 0.25s ease;
   }
 }
 
-/* Custom modern dark scrollbar */
+/* Custom stylish scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #0B0F19;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #1E293B;
+  background: rgba(140, 145, 160, 0.25);
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #334155;
+  background: rgba(140, 145, 160, 0.45);
 }
 
-/* Subtle glassmorphism */
-.glass-panel {
-  background: rgba(17, 24, 39, 0.7);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-}
-
-.glass-panel-elevated {
-  background: rgba(20, 28, 48, 0.85);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-/* Pulse animation utility */
-@keyframes subtle-glow {
-  0%, 100% {
-    opacity: 0.6;
+/* Micro-interaction utilities */
+@media (prefers-reduced-motion: no-preference) {
+  .btn-press {
+    transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   }
-  50% {
+  .btn-press:active {
+    transform: scale(0.97);
+  }
+  
+  .card-hover {
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .card-hover:hover {
+    transform: translateY(-2px);
+  }
+}
+
+/* Smooth fade in */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
     opacity: 1;
+    transform: translateY(0);
   }
 }
 
-.animate-subtle-glow {
-  animation: subtle-glow 4s ease-in-out infinite;
+.animate-fade-in {
+  animation: fadeIn 0.25s ease-out forwards;
 }
-

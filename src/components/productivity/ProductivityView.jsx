@@ -28,21 +28,33 @@ import {
   Calendar,
   Inbox,
   ArrowRight,
+  Flame,
 } from 'lucide-react';
 import { useTask } from '../../context/TaskContext';
+import { useTheme } from '../../context/ThemeContext';
 import Card from '../common/Card';
 import Button from '../common/Button';
 import { formatDate } from '../../utils/dateUtils';
 
-const CustomTooltip = ({ active, payload, label }) => {
+const CustomTooltip = ({ active, payload, label, isDark }) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-slate-900/95 border border-slate-700/80 p-3 rounded-xl shadow-xl backdrop-blur-md text-xs space-y-1">
-        {label && <p className="font-bold text-slate-200 border-b border-slate-800 pb-1">{label}</p>}
+      <div className={`p-3 rounded-xl shadow-xl backdrop-blur-md text-xs space-y-1.5 border ${
+        isDark
+          ? 'bg-charcoal-900/95 border-charcoal-700 text-cream-100'
+          : 'bg-cream-50/95 border-cream-300 text-charcoal-900'
+      }`}>
+        {label && (
+          <p className={`font-bold pb-1 border-b ${
+            isDark ? 'text-cream-200 border-charcoal-750' : 'text-charcoal-800 border-cream-200'
+          }`}>
+            {label}
+          </p>
+        )}
         {payload.map((entry, idx) => (
-          <p key={idx} className="flex items-center gap-2 font-mono" style={{ color: entry.color || entry.fill }}>
-            <span>{entry.name}:</span>
-            <span className="font-bold text-white">{entry.value}</span>
+          <p key={idx} className="flex items-center justify-between gap-3 font-mono" style={{ color: entry.color || entry.fill }}>
+            <span className="font-medium">{entry.name}:</span>
+            <span className={`font-bold ${isDark ? 'text-cream-50' : 'text-charcoal-950'}`}>{entry.value}</span>
           </p>
         ))}
       </div>
@@ -53,6 +65,8 @@ const CustomTooltip = ({ active, payload, label }) => {
 
 const ProductivityView = () => {
   const { stats, setActiveTab } = useTask();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
 
   const {
     total,
@@ -64,6 +78,7 @@ const ProductivityView = () => {
     procrastinationScore,
     completedHours,
     pendingHours,
+    totalEstimatedHours = (completedHours || 0) + (pendingHours || 0),
     humorMessage,
     chartData,
     recommendedTask,
@@ -71,12 +86,24 @@ const ProductivityView = () => {
 
   const { completedVsPending, category, weekly, trend } = chartData || {};
 
+  // Theme-aware colors
+  const gridColor = isDark ? '#262933' : '#E6DFD5';
+  const axisColor = isDark ? '#9CA3AF' : '#78716C';
+
+  // Palette colors for charts
+  const chartColors = {
+    Completed: '#84CC16',  // Lime Green
+    'In Progress': '#F59E0B', // Amber
+    Pending: '#FF5C35',   // Coral Orange
+    Overdue: '#EF4444',   // Rose / Red
+  };
+
   // Procrastination Rating level
   const getProcrastinationLevel = (score) => {
-    if (score >= 70) return { label: 'High Delay Alert', color: 'text-rose-400', badge: 'bg-rose-500/15 border-rose-500/30 text-rose-300' };
-    if (score >= 40) return { label: 'Moderate Procrastination', color: 'text-amber-400', badge: 'bg-amber-500/15 border-amber-500/30 text-amber-300' };
-    if (score > 0) return { label: 'Active Control', color: 'text-indigo-400', badge: 'bg-indigo-500/15 border-indigo-500/30 text-indigo-300' };
-    return { label: 'Procrastination Free', color: 'text-emerald-400', badge: 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300' };
+    if (score >= 70) return { label: 'Danger Zone 🔥', color: 'text-rose-500', badge: 'bg-rose-500/10 border-rose-500/25 text-rose-500 dark:text-rose-400' };
+    if (score >= 40) return { label: 'Lagging Behind ⚠️', color: 'text-amber-500', badge: 'bg-amber-500/10 border-amber-500/25 text-amber-600 dark:text-amber-400' };
+    if (score > 0) return { label: 'In The Zone ⚡', color: 'text-coral-500', badge: 'bg-coral-500/10 border-coral-500/25 text-coral-600 dark:text-coral-400' };
+    return { label: 'Locked In 👑', color: 'text-lime-600 dark:text-lime-400', badge: 'bg-lime-500/15 border-lime-500/30 text-lime-700 dark:text-lime-300' };
   };
 
   const procLevel = getProcrastinationLevel(procrastinationScore);
@@ -85,29 +112,29 @@ const ProductivityView = () => {
     <div className="space-y-6">
       {/* 1. Contextual Humour & Motivation Banner */}
       {humorMessage && (
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-purple-950/40 via-indigo-950/40 to-slate-900 border border-purple-500/30 p-5 shadow-card">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div className="flex items-start gap-3">
-              <div className="p-2.5 rounded-xl bg-purple-500/20 text-purple-300 border border-purple-500/30 shrink-0 mt-0.5">
-                <Smile className="w-5 h-5 text-amber-400" />
+        <div className="relative overflow-hidden rounded-2xl bg-cream-100/90 dark:bg-charcoal-850 border border-coral-500/30 p-5 shadow-card transition-all">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-3.5">
+              <div className="p-2.5 rounded-xl bg-coral-500/15 text-coral-500 border border-coral-500/25 shrink-0 mt-0.5">
+                <Flame className="w-5 h-5 text-coral-500" />
               </div>
               <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-purple-300">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-coral-600 dark:text-coral-400">
                     {humorMessage.title}
                   </span>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${procLevel.badge}`}>
                     Procrastination Score: {procrastinationScore}/100
                   </span>
                 </div>
-                <p className="text-sm font-semibold text-slate-100 italic">
+                <p className="text-sm font-semibold text-charcoal-900 dark:text-cream-100 italic">
                   "{humorMessage.message}"
                 </p>
               </div>
             </div>
 
             <Button
-              variant="outline"
+              variant="primary"
               size="sm"
               onClick={() => setActiveTab('tasks')}
               className="shrink-0 self-end sm:self-auto"
@@ -121,84 +148,84 @@ const ProductivityView = () => {
       {/* 2. Top Summary Metrics Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
         {/* Total Tasks */}
-        <Card className="p-4">
-          <div className="flex items-center justify-between text-slate-400 text-[11px] font-semibold uppercase">
+        <Card className="p-4 border-l-4 border-l-charcoal-400 dark:border-l-charcoal-600">
+          <div className="flex items-center justify-between text-charcoal-500 dark:text-charcoal-350 text-[11px] font-bold uppercase tracking-wider">
             <span>Total Tasks</span>
-            <Layers className="w-4 h-4 text-indigo-400" />
+            <Layers className="w-4 h-4 text-charcoal-600 dark:text-charcoal-300" />
           </div>
-          <div className="mt-2 text-2xl font-black font-mono text-white">
+          <div className="mt-2 text-2xl font-black font-mono text-charcoal-900 dark:text-cream-100">
             {total}
           </div>
-          <div className="text-[11px] text-slate-400 mt-0.5">
-            {totalEstimatedHours} hrs total
+          <div className="text-[11px] text-charcoal-500 dark:text-charcoal-400 mt-0.5 font-medium">
+            {totalEstimatedHours} hrs workload
           </div>
         </Card>
 
         {/* Completed Tasks */}
-        <Card className="p-4">
-          <div className="flex items-center justify-between text-slate-400 text-[11px] font-semibold uppercase">
+        <Card className="p-4 border-l-4 border-l-lime-500">
+          <div className="flex items-center justify-between text-charcoal-500 dark:text-charcoal-350 text-[11px] font-bold uppercase tracking-wider">
             <span>Completed</span>
-            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+            <CheckCircle2 className="w-4 h-4 text-lime-500" />
           </div>
-          <div className="mt-2 text-2xl font-black font-mono text-emerald-400">
+          <div className="mt-2 text-2xl font-black font-mono text-lime-600 dark:text-lime-400">
             {completed}
           </div>
-          <div className="text-[11px] text-emerald-400/90 mt-0.5 font-medium">
+          <div className="text-[11px] text-lime-600 dark:text-lime-400 mt-0.5 font-semibold">
             {completionRate}% finished
           </div>
         </Card>
 
         {/* Pending Tasks */}
-        <Card className="p-4">
-          <div className="flex items-center justify-between text-slate-400 text-[11px] font-semibold uppercase">
+        <Card className="p-4 border-l-4 border-l-coral-500">
+          <div className="flex items-center justify-between text-charcoal-500 dark:text-charcoal-350 text-[11px] font-bold uppercase tracking-wider">
             <span>Pending</span>
-            <Clock className="w-4 h-4 text-indigo-400" />
+            <Clock className="w-4 h-4 text-coral-500" />
           </div>
-          <div className="mt-2 text-2xl font-black font-mono text-indigo-300">
+          <div className="mt-2 text-2xl font-black font-mono text-coral-600 dark:text-coral-400">
             {pending}
           </div>
-          <div className="text-[11px] text-slate-400 mt-0.5">
+          <div className="text-[11px] text-charcoal-500 dark:text-charcoal-400 mt-0.5 font-medium">
             {pendingHours} hrs in queue
           </div>
         </Card>
 
         {/* Overdue Tasks */}
-        <Card className="p-4">
-          <div className="flex items-center justify-between text-slate-400 text-[11px] font-semibold uppercase">
+        <Card className="p-4 border-l-4 border-l-rose-500">
+          <div className="flex items-center justify-between text-charcoal-500 dark:text-charcoal-350 text-[11px] font-bold uppercase tracking-wider">
             <span>Overdue</span>
-            <AlertTriangle className="w-4 h-4 text-rose-400" />
+            <AlertTriangle className="w-4 h-4 text-rose-500" />
           </div>
-          <div className="mt-2 text-2xl font-black font-mono text-rose-400">
+          <div className="mt-2 text-2xl font-black font-mono text-rose-500">
             {overdue}
           </div>
-          <div className={`text-[11px] mt-0.5 ${overdue > 0 ? 'text-rose-400 font-semibold' : 'text-slate-400'}`}>
-            {overdue > 0 ? 'Urgent attention' : 'Zero slips'}
+          <div className={`text-[11px] mt-0.5 ${overdue > 0 ? 'text-rose-500 font-bold' : 'text-charcoal-500 dark:text-charcoal-400'}`}>
+            {overdue > 0 ? 'Needs panic mode 🚨' : 'Zero slips 🎯'}
           </div>
         </Card>
 
         {/* Postponed Tasks */}
-        <Card className="p-4">
-          <div className="flex items-center justify-between text-slate-400 text-[11px] font-semibold uppercase">
+        <Card className="p-4 border-l-4 border-l-amber-500">
+          <div className="flex items-center justify-between text-charcoal-500 dark:text-charcoal-350 text-[11px] font-bold uppercase tracking-wider">
             <span>Postponed</span>
-            <Hourglass className="w-4 h-4 text-amber-400" />
+            <Hourglass className="w-4 h-4 text-amber-500" />
           </div>
-          <div className="mt-2 text-2xl font-black font-mono text-amber-300">
+          <div className="mt-2 text-2xl font-black font-mono text-amber-600 dark:text-amber-400">
             {postponed}
           </div>
-          <div className="text-[11px] text-slate-400 mt-0.5">
+          <div className="text-[11px] text-charcoal-500 dark:text-charcoal-400 mt-0.5 font-medium">
             "Kal Se Pakka" calls
           </div>
         </Card>
 
         {/* Procrastination Score */}
-        <Card className="p-4">
-          <div className="flex items-center justify-between text-slate-400 text-[11px] font-semibold uppercase">
+        <Card className="p-4 border-l-4 border-l-coral-500">
+          <div className="flex items-center justify-between text-charcoal-500 dark:text-charcoal-350 text-[11px] font-bold uppercase tracking-wider">
             <span>Procrastination</span>
-            <Zap className="w-4 h-4 text-purple-400" />
+            <Zap className="w-4 h-4 text-coral-500" />
           </div>
-          <div className="mt-2 text-2xl font-black font-mono text-purple-300">
+          <div className="mt-2 text-2xl font-black font-mono text-coral-600 dark:text-coral-400">
             {procrastinationScore}
-            <span className="text-xs text-slate-400 font-normal">/100</span>
+            <span className="text-xs text-charcoal-500 dark:text-charcoal-400 font-normal">/100</span>
           </div>
           <div className={`text-[10px] mt-0.5 font-bold uppercase ${procLevel.color}`}>
             {procLevel.label}
@@ -208,21 +235,21 @@ const ProductivityView = () => {
 
       {/* 3. Next Recommended Task Highlight from Max Heap */}
       {recommendedTask && (
-        <div className="p-5 rounded-2xl bg-gradient-to-r from-indigo-950/40 via-slate-900 to-purple-950/30 border border-indigo-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+        <div className="p-5 rounded-2xl bg-cream-100/90 dark:bg-charcoal-850 border-l-4 border-l-coral-500 border border-cream-300 dark:border-charcoal-750 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-card">
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-lime-500/15 text-lime-700 dark:text-lime-300 border border-lime-500/30">
                 Max Heap Top Priority
               </span>
-              <span className="text-xs font-mono font-bold text-amber-400">
+              <span className="text-xs font-mono font-bold text-coral-600 dark:text-coral-400">
                 ⚡ Priority Score: {recommendedTask.priority?.toFixed(1) || '0.0'}
               </span>
             </div>
-            <h4 className="text-base font-bold text-white">
+            <h4 className="text-base font-bold text-charcoal-900 dark:text-cream-100">
               {recommendedTask.title}
             </h4>
-            <p className="text-xs text-slate-300">
-              Deadline: <span className="font-mono text-indigo-300">{formatDate(recommendedTask.deadline)}</span> • Estimated Effort: <span className="font-mono text-purple-300">{recommendedTask.duration} hrs</span>
+            <p className="text-xs text-charcoal-600 dark:text-charcoal-300">
+              Deadline: <span className="font-mono text-coral-600 dark:text-coral-400 font-semibold">{formatDate(recommendedTask.deadline)}</span> • Estimated Effort: <span className="font-mono text-charcoal-700 dark:text-cream-200 font-semibold">{recommendedTask.duration} hrs</span>
             </p>
           </div>
 
@@ -245,9 +272,9 @@ const ProductivityView = () => {
         <div className="lg:col-span-5">
           <Card className="h-full flex flex-col justify-between">
             <div>
-              <div className="pb-3 border-b border-slate-800 mb-4">
-                <h3 className="font-bold text-white text-base">Task Status Breakdown</h3>
-                <p className="text-xs text-slate-400">Completed vs Pending vs Overdue</p>
+              <div className="pb-3 border-b border-cream-200 dark:border-charcoal-750 mb-4">
+                <h3 className="font-bold text-charcoal-900 dark:text-cream-100 text-base">Task Status Breakdown</h3>
+                <p className="text-xs text-charcoal-500 dark:text-charcoal-400">Completed vs Pending vs Overdue</p>
               </div>
 
               {completedVsPending && completedVsPending.length > 0 ? (
@@ -264,10 +291,13 @@ const ProductivityView = () => {
                         dataKey="value"
                       >
                         {completedVsPending.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={chartColors[entry.name] || entry.color || '#FF5C35'}
+                          />
                         ))}
                       </Pie>
-                      <Tooltip content={<CustomTooltip />} />
+                      <Tooltip content={<CustomTooltip isDark={isDark} />} />
                       <Legend
                         verticalAlign="bottom"
                         wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }}
@@ -277,18 +307,18 @@ const ProductivityView = () => {
                 </div>
               ) : (
                 <div className="h-64 flex flex-col items-center justify-center text-center p-4">
-                  <Inbox className="w-10 h-10 text-slate-500 mb-2" />
-                  <p className="text-sm font-semibold text-slate-300">No task records</p>
-                  <p className="text-xs text-slate-500 mt-1 max-w-xs">
+                  <Inbox className="w-10 h-10 text-charcoal-400 dark:text-charcoal-500 mb-2" />
+                  <p className="text-sm font-semibold text-charcoal-800 dark:text-cream-200">No task records</p>
+                  <p className="text-xs text-charcoal-500 dark:text-charcoal-400 mt-1 max-w-xs">
                     Create tasks to generate real-time status telemetry.
                   </p>
                 </div>
               )}
             </div>
 
-            <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
+            <div className="pt-3 border-t border-cream-200 dark:border-charcoal-750 flex items-center justify-between text-xs text-charcoal-500 dark:text-charcoal-400">
               <span>Completion Velocity: {completionRate}%</span>
-              <span className="text-indigo-400 font-medium">Live Recharts Pie</span>
+              <span className="text-coral-500 font-semibold">Live Recharts Pie</span>
             </div>
           </Card>
         </div>
@@ -297,12 +327,12 @@ const ProductivityView = () => {
         <div className="lg:col-span-7">
           <Card className="h-full flex flex-col justify-between">
             <div>
-              <div className="pb-3 border-b border-slate-800 mb-4 flex items-center justify-between">
+              <div className="pb-3 border-b border-cream-200 dark:border-charcoal-750 mb-4 flex items-center justify-between">
                 <div>
-                  <h3 className="font-bold text-white text-base">Tasks by Academic Category</h3>
-                  <p className="text-xs text-slate-400">Completed vs Pending per domain</p>
+                  <h3 className="font-bold text-charcoal-900 dark:text-cream-100 text-base">Tasks by Academic Category</h3>
+                  <p className="text-xs text-charcoal-500 dark:text-charcoal-400">Completed vs Pending per domain</p>
                 </div>
-                <span className="text-xs font-mono text-slate-400">
+                <span className="text-xs font-mono text-charcoal-500 dark:text-charcoal-400">
                   {category?.length || 0} active categories
                 </span>
               </div>
@@ -311,31 +341,31 @@ const ProductivityView = () => {
                 <div className="h-64 w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={category} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#1E293B" vertical={false} />
-                      <XAxis dataKey="category" stroke="#64748B" fontSize={11} tickLine={false} />
-                      <YAxis stroke="#64748B" fontSize={11} allowDecimals={false} tickLine={false} />
-                      <Tooltip content={<CustomTooltip />} />
+                      <CartesianGrid strokeDasharray="3 3" stroke={gridColor} vertical={false} />
+                      <XAxis dataKey="category" stroke={axisColor} fontSize={11} tickLine={false} />
+                      <YAxis stroke={axisColor} fontSize={11} allowDecimals={false} tickLine={false} />
+                      <Tooltip content={<CustomTooltip isDark={isDark} />} />
                       <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '8px' }} />
-                      <Bar dataKey="completed" name="Completed" fill="#10B981" radius={[4, 4, 0, 0]} />
-                      <Bar dataKey="pending" name="Pending" fill="#6366F1" radius={[4, 4, 0, 0]} />
-                      <Bar dataKey="overdue" name="Overdue" fill="#F43F5E" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="completed" name="Completed" fill="#84CC16" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="pending" name="Pending" fill="#FF5C35" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="overdue" name="Overdue" fill="#EF4444" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
               ) : (
                 <div className="h-64 flex flex-col items-center justify-center text-center p-4">
-                  <Inbox className="w-10 h-10 text-slate-500 mb-2" />
-                  <p className="text-sm font-semibold text-slate-300">No category data</p>
-                  <p className="text-xs text-slate-500 mt-1 max-w-xs">
+                  <Inbox className="w-10 h-10 text-charcoal-400 dark:text-charcoal-500 mb-2" />
+                  <p className="text-sm font-semibold text-charcoal-800 dark:text-cream-200">No category data</p>
+                  <p className="text-xs text-charcoal-500 dark:text-charcoal-400 mt-1 max-w-xs">
                     Assign categories (Assignment, Project, Exam) to compare workload.
                   </p>
                 </div>
               )}
             </div>
 
-            <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
+            <div className="pt-3 border-t border-cream-200 dark:border-charcoal-750 flex items-center justify-between text-xs text-charcoal-500 dark:text-charcoal-400">
               <span>Categorical Distribution</span>
-              <span className="text-purple-400 font-medium">Recharts Grouped Bar</span>
+              <span className="text-lime-600 dark:text-lime-400 font-semibold">Recharts Grouped Bar</span>
             </div>
           </Card>
         </div>
@@ -347,36 +377,39 @@ const ProductivityView = () => {
         <div className="lg:col-span-6">
           <Card className="h-full flex flex-col justify-between">
             <div>
-              <div className="pb-3 border-b border-slate-800 mb-4">
-                <h3 className="font-bold text-white text-base">Weekly Productivity (Past 7 Days)</h3>
-                <p className="text-xs text-slate-400">Planned deadlines vs Actual completed tasks</p>
+              <div className="pb-3 border-b border-cream-200 dark:border-charcoal-750 mb-4">
+                <h3 className="font-bold text-charcoal-900 dark:text-cream-100 text-base">Weekly Productivity (Past 7 Days)</h3>
+                <p className="text-xs text-charcoal-500 dark:text-charcoal-400">Planned deadlines vs Actual completed tasks</p>
               </div>
 
               {weekly && weekly.length > 0 ? (
                 <div className="h-64 w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={weekly} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#1E293B" vertical={false} />
-                      <XAxis dataKey="day" stroke="#64748B" fontSize={11} tickLine={false} />
-                      <YAxis stroke="#64748B" fontSize={11} allowDecimals={false} tickLine={false} />
-                      <Tooltip content={<CustomTooltip />} />
+                      <CartesianGrid strokeDasharray="3 3" stroke={gridColor} vertical={false} />
+                      <XAxis dataKey="day" stroke={axisColor} fontSize={11} tickLine={false} />
+                      <YAxis stroke={axisColor} fontSize={11} allowDecimals={false} tickLine={false} />
+                      <Tooltip content={<CustomTooltip isDark={isDark} />} />
                       <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '8px' }} />
-                      <Bar dataKey="planned" name="Planned / Due" fill="#334155" radius={[4, 4, 0, 0]} />
-                      <Bar dataKey="completed" name="Completed" fill="#8B5CF6" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="planned" name="Planned / Due" fill={isDark ? '#3D4251' : '#D5CDBE'} radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="completed" name="Completed" fill="#84CC16" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
               ) : (
                 <div className="h-64 flex flex-col items-center justify-center text-center p-4">
-                  <Calendar className="w-10 h-10 text-slate-500 mb-2" />
-                  <p className="text-sm font-semibold text-slate-300">No weekly activity</p>
+                  <Calendar className="w-10 h-10 text-charcoal-400 dark:text-charcoal-500 mb-2" />
+                  <p className="text-sm font-semibold text-charcoal-800 dark:text-cream-200">No weekly activity</p>
+                  <p className="text-xs text-charcoal-500 dark:text-charcoal-400 mt-1 max-w-xs">
+                    Complete tasks across this week to track your streak.
+                  </p>
                 </div>
               )}
             </div>
 
-            <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
+            <div className="pt-3 border-t border-cream-200 dark:border-charcoal-750 flex items-center justify-between text-xs text-charcoal-500 dark:text-charcoal-400">
               <span>7-Day Productivity Window</span>
-              <span className="text-indigo-400 font-medium">Recharts Bar</span>
+              <span className="text-coral-500 font-semibold">Recharts Bar</span>
             </div>
           </Card>
         </div>
@@ -385,9 +418,9 @@ const ProductivityView = () => {
         <div className="lg:col-span-6">
           <Card className="h-full flex flex-col justify-between">
             <div>
-              <div className="pb-3 border-b border-slate-800 mb-4">
-                <h3 className="font-bold text-white text-base">Cumulative Completion Trend</h3>
-                <p className="text-xs text-slate-400">Growth of completed tasks over time</p>
+              <div className="pb-3 border-b border-cream-200 dark:border-charcoal-750 mb-4">
+                <h3 className="font-bold text-charcoal-900 dark:text-cream-100 text-base">Cumulative Completion Trend</h3>
+                <p className="text-xs text-charcoal-500 dark:text-charcoal-400">Growth of completed tasks over time</p>
               </div>
 
               {trend && trend.length > 0 ? (
@@ -396,19 +429,19 @@ const ProductivityView = () => {
                     <AreaChart data={trend} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                       <defs>
                         <linearGradient id="trendGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                          <stop offset="5%" stopColor="#10B981" stopOpacity={0.4} />
-                          <stop offset="95%" stopColor="#10B981" stopOpacity={0.0} />
+                          <stop offset="5%" stopColor="#84CC16" stopOpacity={0.4} />
+                          <stop offset="95%" stopColor="#84CC16" stopOpacity={0.0} />
                         </linearGradient>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#1E293B" vertical={false} />
-                      <XAxis dataKey="label" stroke="#64748B" fontSize={11} tickLine={false} />
-                      <YAxis stroke="#64748B" fontSize={11} allowDecimals={false} tickLine={false} />
-                      <Tooltip content={<CustomTooltip />} />
+                      <CartesianGrid strokeDasharray="3 3" stroke={gridColor} vertical={false} />
+                      <XAxis dataKey="label" stroke={axisColor} fontSize={11} tickLine={false} />
+                      <YAxis stroke={axisColor} fontSize={11} allowDecimals={false} tickLine={false} />
+                      <Tooltip content={<CustomTooltip isDark={isDark} />} />
                       <Area
                         type="monotone"
                         dataKey="completions"
                         name="Completed Tasks"
-                        stroke="#10B981"
+                        stroke="#84CC16"
                         strokeWidth={2.5}
                         fill="url(#trendGradient)"
                       />
@@ -417,18 +450,18 @@ const ProductivityView = () => {
                 </div>
               ) : (
                 <div className="h-64 flex flex-col items-center justify-center text-center p-4">
-                  <Inbox className="w-10 h-10 text-slate-500 mb-2" />
-                  <p className="text-sm font-semibold text-slate-300">No completions yet</p>
-                  <p className="text-xs text-slate-500 mt-1 max-w-xs">
+                  <Inbox className="w-10 h-10 text-charcoal-400 dark:text-charcoal-500 mb-2" />
+                  <p className="text-sm font-semibold text-charcoal-800 dark:text-cream-200">No completions yet</p>
+                  <p className="text-xs text-charcoal-500 dark:text-charcoal-400 mt-1 max-w-xs">
                     Mark tasks completed to trace your upward progress velocity curve.
                   </p>
                 </div>
               )}
             </div>
 
-            <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
+            <div className="pt-3 border-t border-cream-200 dark:border-charcoal-750 flex items-center justify-between text-xs text-charcoal-500 dark:text-charcoal-400">
               <span>Velocity Curve</span>
-              <span className="text-emerald-400 font-medium">Recharts Area</span>
+              <span className="text-lime-600 dark:text-lime-400 font-semibold">Recharts Area</span>
             </div>
           </Card>
         </div>

@@ -502,6 +502,28 @@ export const taskService = {
   },
 
   /**
+   * Marks all unread notifications as read for the user.
+   * 
+   * @param {string} userId
+   * @returns {Promise<{ success: boolean, error: Object|null }>}
+   */
+  async markAllNotificationsRead(userId) {
+    if (!isSupabaseConfigured || !userId) return { success: false, error: null };
+
+    try {
+      const { error } = await supabase
+        .from('notifications')
+        .update({ is_read: true })
+        .eq('user_id', userId)
+        .eq('is_read', false);
+
+      return { success: !error, error };
+    } catch (err) {
+      return { success: false, error: err };
+    }
+  },
+
+  /**
    * Performs a safe, one-time migration of LocalStorage tasks to Supabase.
    * Prevents duplicate imports by tracking a user-specific migration flag.
    * 
