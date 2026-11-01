@@ -16,7 +16,7 @@ import { useTask } from '../../context/TaskContext';
 import { useAuth } from '../../context/AuthContext';
 
 const Sidebar = ({ isMobileOpen, setIsMobileOpen }) => {
-  const { activeTab, setActiveTab, stats, resetToSampleData } = useTask();
+  const { activeTab, setActiveTab, stats, resetToSampleData, cloudSyncStatus, migrateLocalData } = useTask();
   const { user, logout } = useAuth();
 
   const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'College Student';
@@ -189,6 +189,35 @@ const Sidebar = ({ isMobileOpen, setIsMobileOpen }) => {
               Reset
             </button>
           </div>
+        </div>
+
+        {/* Cloud Sync Telemetry */}
+        <div className="px-5 py-2 flex items-center justify-between text-[11px] text-slate-400 border-t border-slate-800/80 bg-slate-950/20">
+          <div className="flex items-center gap-1.5">
+            <span
+              className={`w-2 h-2 rounded-full ${
+                cloudSyncStatus === 'synced'
+                  ? 'bg-emerald-400'
+                  : cloudSyncStatus === 'syncing'
+                  ? 'bg-amber-400 animate-pulse'
+                  : 'bg-rose-400'
+              }`}
+            />
+            <span className="text-[11px] font-medium text-slate-300">
+              {cloudSyncStatus === 'synced'
+                ? 'Cloud Synced'
+                : cloudSyncStatus === 'syncing'
+                ? 'Syncing...'
+                : 'Supabase Active'}
+            </span>
+          </div>
+          <button
+            onClick={migrateLocalData}
+            title="Import/Migrate local tasks to cloud database"
+            className="hover:text-indigo-400 text-[10px] text-slate-400 transition-colors cursor-pointer"
+          >
+            Migrate Local
+          </button>
         </div>
 
         {/* Authenticated User Profile & Logout */}

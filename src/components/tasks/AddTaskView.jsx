@@ -103,7 +103,7 @@ const AddTaskView = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
 
@@ -119,7 +119,7 @@ const AddTaskView = () => {
       notes: formData.notes.trim(),
     };
 
-    const result = addTask(newTask);
+    const result = await addTask(newTask);
 
     if (!result.success) {
       setErrors({ title: result.error });

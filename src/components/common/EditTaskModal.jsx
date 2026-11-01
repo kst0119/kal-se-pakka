@@ -105,13 +105,13 @@ const EditTaskModal = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
     if (!validate()) return;
 
     setIsSubmitting(true);
 
-    updateTask(editModalTask.id, {
+    await updateTask(editModalTask.id, {
       title: formData.title.trim(),
       description: formData.description.trim(),
       category: formData.category,

@@ -22,7 +22,7 @@ const PostponeModal = () => {
     'Need to consult professor/peer',
   ];
 
-  const handleConfirm = (e) => {
+  const handleConfirm = async (e) => {
     e.preventDefault();
     let newDate;
     const now = new Date();
@@ -44,7 +44,7 @@ const PostponeModal = () => {
     }
 
     const isoString = newDate.toISOString().slice(0, 16);
-    postponeTask(postponeModalTask.id, isoString, reason);
+    await postponeTask(postponeModalTask.id, isoString, reason);
   };
 
   return (
