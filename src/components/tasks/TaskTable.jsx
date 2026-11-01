@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, Clock, CheckCircle2, Circle, Trash2, Hourglass } from 'lucide-react';
+import { Calendar, Clock, CheckCircle2, Circle, Trash2, Hourglass, Zap } from 'lucide-react';
 import { CategoryBadge, ImportanceBadge, StatusBadge } from '../common/Badge';
 import { formatDate, getRelativeTimeDescription, isOverdue } from '../../utils/dateUtils';
 import { useTask } from '../../context/TaskContext';
@@ -16,6 +16,7 @@ const TaskTable = ({ tasks }) => {
             <th className="py-3.5 px-4">Category</th>
             <th className="py-3.5 px-4">Deadline</th>
             <th className="py-3.5 px-4">Importance</th>
+            <th className="py-3.5 px-4">Priority (DSA)</th>
             <th className="py-3.5 px-4">Est. Duration</th>
             <th className="py-3.5 px-4">Status</th>
             <th className="py-3.5 px-4 text-right">Actions</th>
@@ -86,6 +87,21 @@ const TaskTable = ({ tasks }) => {
                 {/* Importance */}
                 <td className="py-3.5 px-4 whitespace-nowrap">
                   <ImportanceBadge importance={task.importance} />
+                </td>
+
+                {/* Priority Score (DSA) */}
+                <td className="py-3.5 px-4 whitespace-nowrap">
+                  {task.priority !== undefined ? (
+                    <span
+                      className="inline-flex items-center gap-1 text-xs font-mono font-bold px-2.5 py-1 rounded-lg bg-purple-500/15 text-purple-300 border border-purple-500/30"
+                      title="Priority Score: 0.5×Urgency + 0.3×Importance + 0.2×Effort"
+                    >
+                      <Zap className="w-3.5 h-3.5 text-amber-400" />
+                      {task.priority.toFixed(1)}
+                    </span>
+                  ) : (
+                    <span className="text-xs text-slate-500">—</span>
+                  )}
                 </td>
 
                 {/* Duration */}

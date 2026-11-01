@@ -67,7 +67,9 @@ const MyTasksView = () => {
         return true;
       })
       .sort((a, b) => {
-        if (sortBy === 'deadline-asc') {
+        if (sortBy === 'priority-desc') {
+          return (b.priority || 0) - (a.priority || 0);
+        } else if (sortBy === 'deadline-asc') {
           return new Date(a.deadline) - new Date(b.deadline);
         } else if (sortBy === 'deadline-desc') {
           return new Date(b.deadline) - new Date(a.deadline);
@@ -157,6 +159,7 @@ const MyTasksView = () => {
                 onChange={(e) => setSortBy(e.target.value)}
                 className="bg-transparent focus:outline-none cursor-pointer text-slate-200"
               >
+                <option value="priority-desc" className="bg-slate-900">⚡ Priority (Max Heap Order)</option>
                 <option value="deadline-asc" className="bg-slate-900">Deadline (Earliest)</option>
                 <option value="deadline-desc" className="bg-slate-900">Deadline (Latest)</option>
                 <option value="importance-desc" className="bg-slate-900">Priority (High to Low)</option>
@@ -169,22 +172,20 @@ const MyTasksView = () => {
             <div className="flex items-center bg-slate-800/80 border border-slate-700 rounded-xl p-1">
               <button
                 onClick={() => setViewMode('grid')}
-                className={`p-1.5 rounded-lg transition-colors ${
-                  viewMode === 'grid'
-                    ? 'bg-indigo-600 text-white shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200'
-                }`}
+                className={`p-1.5 rounded-lg transition-colors ${viewMode === 'grid'
+                  ? 'bg-indigo-600 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200'
+                  }`}
                 title="Grid view"
               >
                 <LayoutGrid className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setViewMode('table')}
-                className={`p-1.5 rounded-lg transition-colors ${
-                  viewMode === 'table'
-                    ? 'bg-indigo-600 text-white shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200'
-                }`}
+                className={`p-1.5 rounded-lg transition-colors ${viewMode === 'table'
+                  ? 'bg-indigo-600 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200'
+                  }`}
                 title="Table view"
               >
                 <List className="w-4 h-4" />
@@ -204,11 +205,10 @@ const MyTasksView = () => {
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
-                className={`px-3 py-1 rounded-xl text-xs font-medium whitespace-nowrap transition-all ${
-                  selectedCategory === cat
-                    ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/30'
-                    : 'bg-slate-800/60 text-slate-400 hover:text-slate-200 hover:bg-slate-800'
-                }`}
+                className={`px-3 py-1 rounded-xl text-xs font-medium whitespace-nowrap transition-all ${selectedCategory === cat
+                  ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/30'
+                  : 'bg-slate-800/60 text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                  }`}
               >
                 {cat}
               </button>

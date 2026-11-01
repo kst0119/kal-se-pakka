@@ -254,32 +254,41 @@ const ProductivityView = () => {
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <h3 className="text-base font-bold text-white">
-                Upcoming DSA Algorithmic Engine Roadmap (Phase 2 Preview)
+                Active DSA Engine & Algorithmic Architecture (Part 2 Live)
               </h3>
-              <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-purple-500/20 text-purple-300 border border-purple-500/30">
-                Mini Project Architecture
+              <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                DSA Live
               </span>
             </div>
             <p className="text-xs text-slate-300 leading-relaxed">
-              This frontend foundation connects directly to the core Data Structures & Algorithms being implemented for this college project:
+              The application priority queue is now dynamically powered by our custom Data Structures & Algorithms implementation:
             </p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2 text-xs">
-              <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800">
-                <div className="font-semibold text-indigo-300">1. Priority Queue (Min-Heap)</div>
+              <div className="p-3 rounded-xl bg-slate-900/80 border border-indigo-500/30">
+                <div className="font-semibold text-indigo-300 flex items-center justify-between">
+                  <span>1. Custom Max Heap</span>
+                  <span className="text-[10px] text-emerald-400 font-mono">Active</span>
+                </div>
                 <p className="text-[11px] text-slate-400 mt-1">
-                  Extracts highest urgency task in O(log N) time based on dynamic weights.
+                  Maintains complete binary tree with O(log N) insert/extract and O(1) peek for next-task extraction.
                 </p>
               </div>
-              <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800">
-                <div className="font-semibold text-purple-300">2. Greedy Interval Scheduling</div>
+              <div className="p-3 rounded-xl bg-slate-900/80 border border-purple-500/30">
+                <div className="font-semibold text-purple-300 flex items-center justify-between">
+                  <span>2. Priority Formula</span>
+                  <span className="text-[10px] text-emerald-400 font-mono">Active</span>
+                </div>
                 <p className="text-[11px] text-slate-400 mt-1">
-                  Maximizes completed assignments within available daily free study slots.
+                  (0.5×Urgency) + (0.3×Importance) + (0.2×Effort) with all components normalized (0-100).
                 </p>
               </div>
-              <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800">
-                <div className="font-semibold text-sky-300">3. Dynamic Procrastination Index</div>
+              <div className="p-3 rounded-xl bg-slate-900/80 border border-sky-500/30">
+                <div className="font-semibold text-sky-300 flex items-center justify-between">
+                  <span>3. Hash Map Index</span>
+                  <span className="text-[10px] text-emerald-400 font-mono">Active</span>
+                </div>
                 <p className="text-[11px] text-slate-400 mt-1">
-                  Evaluates delay patterns and triggers adaptive reminders before deadlines hit.
+                  JavaScript Map stores all tasks for O(1) lookup and stays strictly synchronized with the Max Heap.
                 </p>
               </div>
             </div>

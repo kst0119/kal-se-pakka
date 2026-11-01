@@ -1,6 +1,8 @@
-import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useRef } from 'react';
 import { INITIAL_TASKS } from '../constants/initialTasks';
 import { isDueToday, isOverdue } from '../utils/dateUtils';
+import { TaskManager } from '../dsa/TaskManager.js';
+import { calculatePriorityScore } from '../dsa/priorityCalculator.js';
 
 const TaskContext = createContext();
 
@@ -19,6 +21,9 @@ export const TaskProvider = ({ children }) => {
 
   // Postpone modal state
   const [postponeModalTask, setPostponeModalTask] = useState(null);
+
+  // Core DSA Coordinator: Encapsulates Hash Map and Custom Max Heap
+  const taskManagerRef = useRef(new TaskManager());
 
   // Load initial tasks from localStorage or defaults
   const [tasks, setTasks] = useState(() => {
@@ -43,7 +48,6 @@ export const TaskProvider = ({ children }) => {
     } catch (e) {
       console.error('Failed to load history from localStorage', e);
     }
-    // Seed initial history entries
     return [
       {
         id: 'hist-1',
@@ -80,6 +84,11 @@ export const TaskProvider = ({ children }) => {
     ];
   });
 
+  // Keep TaskManager (Hash Map and Max Heap) synchronized whenever tasks change
+  useEffect(() => {
+    taskManagerRef.current.setTasks(tasks);
+  }, [tasks]);
+
   // Sync to localStorage
   useEffect(() => {
     try {
@@ -107,16 +116,24 @@ export const TaskProvider = ({ children }) => {
 
   // Add new task
   const addTask = (newTaskData) => {
-    const newTask = {
+    const rawNewTask = {
       ...newTaskData,
       id: `task-${Date.now()}`,
       status: 'Pending',
       createdAt: new Date().toISOString(),
-      procrastinationScore: Math.floor(Math.random() * 30) + 40,
     };
 
+    // Calculate priority with DSA priorityCalculator
+    const priorityData = calculatePriorityScore(rawNewTask);
+    const newTask = {
+      ...rawNewTask,
+      priority: priorityData.priorityScore,
+      priorityData,
+    };
+
+    // Add to state
     setTasks(prev => [newTask, ...prev]);
-    showToast(`Task "${newTask.title}" added to schedule!`, 'success');
+    showToast(`Task "${newTask.title}" added with Priority Score: ${newTask.priority}!`, 'success');
     return newTask;
   };
 
@@ -125,11 +142,19 @@ export const TaskProvider = ({ children }) => {
     setTasks(prev =>
       prev.map(task => {
         if (task.id === id) {
-          const updated = { ...task, ...updatedFields };
+          const merged = { ...task, ...updatedFields };
+
+          // Recalculate priority score on updates
+          const priorityData = calculatePriorityScore(merged);
+          const updated = {
+            ...merged,
+            priority: priorityData.priorityScore,
+            priorityData,
+          };
+
           // Check if completion status changed
           if (updatedFields.status === 'Completed' && task.status !== 'Completed') {
             updated.completedAt = new Date().toISOString();
-            // Append to history
             setHistory(h => [
               {
                 id: `hist-${Date.now()}`,
@@ -165,14 +190,12 @@ export const TaskProvider = ({ children }) => {
     if (!target) return;
 
     if (target.status === 'Completed') {
-      // Reopen task
       const newStatus = isOverdue(target.deadline) ? 'Overdue' : 'Pending';
       updateTask(id, { status: newStatus, completedAt: null });
-      showToast(`Reopened "${target.title}"`, 'info');
+      showToast(`Reopened "${target.title}" (Re-entered Max Heap Priority Queue)`, 'info');
     } else {
-      // Complete task
       updateTask(id, { status: 'Completed', completedAt: new Date().toISOString() });
-      showToast(`Great job! Completed "${target.title}"! 🎉`, 'success');
+      showToast(`Completed "${target.title}"! (Removed from Priority Queue) 🎉`, 'success');
     }
   };
 
@@ -187,12 +210,18 @@ export const TaskProvider = ({ children }) => {
     setTasks(prev =>
       prev.map(t => {
         if (t.id === id) {
-          return {
+          const updated = {
             ...t,
             deadline: newDeadline,
             status: 'Pending',
             postponedCount,
             notes: reason ? `${t.notes ? t.notes + ' | ' : ''}Postponed: ${reason}` : t.notes
+          };
+          const priorityData = calculatePriorityScore(updated);
+          return {
+            ...updated,
+            priority: priorityData.priorityScore,
+            priorityData,
           };
         }
         return t;
@@ -216,13 +245,12 @@ export const TaskProvider = ({ children }) => {
       ...prev
     ]);
 
-    showToast(`Task postponed: "Kal Se Pakka!" New deadline set.`, 'warning');
+    showToast(`Task postponed: Priority recalculated in Max Heap.`, 'warning');
     setPostponeModalTask(null);
   };
 
   // Restore history task back to pending
   const restoreTask = (historyItem) => {
-    // Check if task still exists in active list
     const existing = tasks.find(t => t.id === historyItem.taskId);
     if (existing) {
       updateTask(existing.id, { status: 'Pending' });
@@ -239,19 +267,32 @@ export const TaskProvider = ({ children }) => {
         status: 'Pending',
         createdAt: new Date().toISOString(),
       };
+      const priorityData = calculatePriorityScore(restored);
+      restored.priority = priorityData.priorityScore;
+      restored.priorityData = priorityData;
+
       setTasks(prev => [restored, ...prev]);
       showToast(`Restored "${historyItem.title}" to active tasks.`, 'info');
     }
   };
 
-  // Reset sample data helper (useful for testing/demo)
+  // Reset sample data helper
   const resetToSampleData = () => {
     setTasks(INITIAL_TASKS);
     showToast('Sample tasks reset successfully!', 'info');
   };
 
-  // Compute stats and recommendations
+  // Constant-time Hash Map task getter
+  const getTaskById = (id) => {
+    return taskManagerRef.current.getTask(id);
+  };
+
+  // Compute stats and recommendations using the Max Heap
   const stats = useMemo(() => {
+    // 1. Synchronize the TaskManager instance
+    const tm = new TaskManager();
+    tm.setTasks(tasks);
+
     const total = tasks.length;
     let pending = 0;
     let completed = 0;
@@ -267,7 +308,7 @@ export const TaskProvider = ({ children }) => {
         if (taskOverdue) {
           overdue++;
         }
-        pending++; // Includes In Progress and Overdue pending tasks
+        pending++;
       }
 
       if (isDueToday(task.deadline)) {
@@ -277,50 +318,17 @@ export const TaskProvider = ({ children }) => {
 
     const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
 
-    // Recommend Next Task:
-    // Filter pending/in-progress tasks
-    const activeTasks = tasks.filter(t => t.status !== 'Completed');
+    // 2. Extract highest-priority task directly from Max Heap root (O(1) peek)
+    const topHeapTask = tm.getHighestPriorityTask();
 
-    let recommended = null;
     let recommendationReason = '';
-
-    if (activeTasks.length > 0) {
-      // Score = Urgency + Importance Weight
-      // Importance: High = 30, Medium = 20, Low = 10
-      // Urgency: Overdue = 100, Due Today = 60, Due Soon = 40, Later = 10
-      const scored = activeTasks.map(task => {
-        let score = 0;
-        const taskOverdue = isOverdue(task.deadline, task.status);
-        const dueToday = isDueToday(task.deadline);
-
-        if (taskOverdue) score += 100;
-        else if (dueToday) score += 60;
-        else score += 20;
-
-        if (task.importance === 'High') score += 30;
-        else if (task.importance === 'Medium') score += 20;
-        else score += 10;
-
-        // If in progress, bump priority
-        if (task.status === 'In Progress') score += 15;
-
-        return { task, score, taskOverdue, dueToday };
-      });
-
-      scored.sort((a, b) => b.score - a.score);
-      const top = scored[0];
-      recommended = top.task;
-
-      if (top.taskOverdue) {
-        recommendationReason = `Immediate Attention: This ${top.task.importance.toLowerCase()} importance task is past its deadline. Resolve now to stop score penalty.`;
-      } else if (top.dueToday) {
-        recommendationReason = `Due Today: High priority deadline scheduled for today (${top.task.duration}h estimated). Best tackled before evening.`;
-      } else if (top.task.importance === 'High') {
-        recommendationReason = `Critical Academic Impact: High importance ${top.task.category.toLowerCase()} requiring ${top.task.duration}h of focused effort.`;
-      } else {
-        recommendationReason = `Optimal Next Step: Prioritized by estimated duration and upcoming schedule.`;
-      }
+    if (topHeapTask) {
+      const pd = topHeapTask.priorityData || calculatePriorityScore(topHeapTask);
+      recommendationReason = pd.reason || `Extracted by Max Heap root with Priority Score ${topHeapTask.priority}.`;
     }
+
+    // Verification check for synchronization
+    const syncStatus = tm.verifySynchronization();
 
     return {
       total,
@@ -329,8 +337,10 @@ export const TaskProvider = ({ children }) => {
       overdue,
       todayTasks,
       completionRate,
-      recommendedTask: recommended,
+      recommendedTask: topHeapTask,
       recommendationReason,
+      syncStatus,
+      heapPendingCount: tm.getPendingCount(),
     };
   }, [tasks]);
 
@@ -352,6 +362,8 @@ export const TaskProvider = ({ children }) => {
     postponeTask,
     restoreTask,
     resetToSampleData,
+    getTaskById,
+    taskManager: taskManagerRef.current,
     stats,
   };
 
@@ -365,4 +377,3 @@ export const useTask = () => {
   }
   return context;
 };
-

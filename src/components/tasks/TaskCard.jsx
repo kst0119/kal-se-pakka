@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, Clock, CheckCircle2, Circle, Trash2, Hourglass, AlertCircle } from 'lucide-react';
+import { Calendar, Clock, CheckCircle2, Circle, Trash2, Hourglass, AlertCircle, Zap } from 'lucide-react';
 import { CategoryBadge, ImportanceBadge, StatusBadge } from '../common/Badge';
 import { formatDate, getRelativeTimeDescription, isOverdue } from '../../utils/dateUtils';
 import Button from '../common/Button';
@@ -24,11 +24,20 @@ const TaskCard = ({ task }) => {
       `}
     >
       <div>
-        {/* Top badges: Category, Importance, Status */}
+        {/* Top badges: Category, Importance, Status, and Priority Score */}
         <div className="flex items-center justify-between gap-2 mb-3">
           <div className="flex items-center gap-1.5 flex-wrap">
             <CategoryBadge category={task.category} />
             <ImportanceBadge importance={task.importance} />
+            {task.priority !== undefined && (
+              <span
+                className="inline-flex items-center gap-1 text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-purple-500/15 text-purple-300 border border-purple-500/30"
+                title="Calculated Priority Score: (0.5×Urgency + 0.3×Importance + 0.2×Effort)"
+              >
+                <Zap className="w-3 h-3 text-amber-400" />
+                {task.priority.toFixed(1)}
+              </span>
+            )}
           </div>
 
           <StatusBadge status={task.status} isOverdue={taskOverdue} />
