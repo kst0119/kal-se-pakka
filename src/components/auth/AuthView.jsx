@@ -1,62 +1,51 @@
-/**
- * AuthView.jsx
- * 
- * Playful Gen-Z Authentication Screens for KAL SE PAKKA.
- * Supports:
- *  - Real Supabase Email/Password Login
- *  - Full Registration (Full Name, Email, Password, Confirm Password)
- *  - Password Reset / Forgot Password
- *  - Theme Toggle (Cream Light / Charcoal Dark)
- *  - Smooth navigation back to Landing Page
- */
-
 import React, { useState } from 'react';
 import {
-  Mail,
   Lock,
+  Mail,
   User,
-  Eye,
-  EyeOff,
   ArrowRight,
-  Flame,
-  CheckCircle2,
+  Sparkles,
   AlertCircle,
-  Clock,
+  CheckCircle2,
   ChevronLeft,
-  Loader2,
   Sun,
   Moon,
-  Sparkles,
+  Clock,
+  Flame,
   Zap,
+  Eye,
+  EyeOff,
+  Loader2,
+  Rocket,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import Button from '../common/Button';
 
 const AuthView = ({ initialMode = 'login', onBackToLanding }) => {
-  const { login, signup, resetPassword, isConfigured } = useAuth();
-  const { isDark, toggleTheme } = useTheme();
-
-  // Mode: 'login' | 'signup' | 'forgot'
-  const [mode, setMode] = useState(initialMode);
-
-  // Form Fields
+  const [mode, setMode] = useState(initialMode); // 'login' | 'signup' | 'forgot'
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-
-  // UI States
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+  const [isEmailPending, setIsEmailPending] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
+  const { login, signup, loginAsGuest, resetPassword } = useAuth();
+  const { theme, toggleTheme, isDark } = useTheme();
+
+  // Switch between login / signup / forgot
   const switchMode = (newMode) => {
     setMode(newMode);
     setErrorMsg('');
     setSuccessMsg('');
+    setIsEmailPending(false);
+    setPassword('');
+    setConfirmPassword('');
   };
 
   // Validation
@@ -65,13 +54,13 @@ const AuthView = ({ initialMode = 'login', onBackToLanding }) => {
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!email.trim() || !emailRegex.test(email.trim())) {
-      setErrorMsg('Please enter a valid college or personal email address.');
+      setErrorMsg('Please enter a valid email address.');
       return false;
     }
 
     if (mode === 'signup') {
       if (!fullName.trim()) {
-        setErrorMsg('Please enter your full name, bestie.');
+        setErrorMsg('Please enter your full name.');
         return false;
       }
       if (password.length < 6) {
@@ -100,16 +89,18 @@ const AuthView = ({ initialMode = 'login', onBackToLanding }) => {
     setIsLoading(true);
     setErrorMsg('');
     setSuccessMsg('');
+    setIsEmailPending(false);
 
     try {
       if (mode === 'login') {
         const result = await login(email.trim(), password);
         if (!result.success) {
           const rawErr = result.error?.message || '';
-          if (rawErr.toLowerCase().includes('invalid login credentials')) {
+          if (result.isEmailNotConfirmed || rawErr.toLowerCase().includes('email not confirmed')) {
+            setIsEmailPending(true);
+            setErrorMsg('Supabase email confirmation is enabled for this project. If you have not verified your email, click "Enter Instant Demo Mode" below to use the full application immediately!');
+          } else if (rawErr.toLowerCase().includes('invalid login credentials')) {
             setErrorMsg('Invalid email or password. Check for typos!');
-          } else if (rawErr.toLowerCase().includes('email not confirmed')) {
-            setErrorMsg('Email not verified yet. Check your inbox for the Supabase confirmation link!');
           } else {
             setErrorMsg(rawErr || 'Failed to sign in. Please try again.');
           }
@@ -130,10 +121,10 @@ const AuthView = ({ initialMode = 'login', onBackToLanding }) => {
           }
         } else {
           if (result.isEmailConfirmationRequired) {
+            setIsEmailPending(true);
             setSuccessMsg(
-              'Account created! A confirmation link was sent to your email. Verify it and then log in.'
+              'Account created! Note: Supabase email verification is required. If you cannot verify right now, jump into Instant Demo Mode below!'
             );
-            setTimeout(() => setMode('login'), 3500);
           } else {
             setSuccessMsg('Account created successfully! Logging you in...');
           }
@@ -153,6 +144,10 @@ const AuthView = ({ initialMode = 'login', onBackToLanding }) => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleInstantDemo = () => {
+    loginAsGuest(fullName.trim() || 'Demo Student');
   };
 
   return (
@@ -248,33 +243,51 @@ const AuthView = ({ initialMode = 'login', onBackToLanding }) => {
               </div>
               <div>
                 <h4 className="text-xs font-bold text-charcoal-950 dark:text-white">
-                  Cloud Persistent Sessions
+                  Full CRUD & O(1) Hash Map
                 </h4>
                 <p className="text-[11px] text-charcoal-500 dark:text-charcoal-400 mt-0.5">
-                  Encrypted tokens and Row-Level Security guarantee user privacy.
+                  Add, edit, delete, postpone, and complete tasks with instant synchronization.
                 </p>
               </div>
             </div>
+          </div>
+
+          {/* Quick Demo Option for instant access */}
+          <div className="p-4 rounded-2xl bg-lime-400/10 border border-lime-400/30 flex items-center justify-between gap-3 shadow-sm">
+            <div className="space-y-0.5">
+              <div className="text-xs font-bold text-charcoal-900 dark:text-cream-100 flex items-center gap-1.5">
+                <Rocket className="w-3.5 h-3.5 text-lime-500" />
+                <span>Instant Demo Access</span>
+              </div>
+              <p className="text-[11px] text-charcoal-500 dark:text-charcoal-400">
+                No sign-up or email confirmation needed to test the full system.
+              </p>
+            </div>
+            <Button
+              variant="lime"
+              size="sm"
+              onClick={handleInstantDemo}
+              className="shrink-0"
+            >
+              Try Demo
+            </Button>
           </div>
         </div>
 
         {/* Right Side: Auth Form Card */}
         <div className="lg:col-span-7">
-          <div className="w-full max-w-md mx-auto bg-white dark:bg-charcoal-850 border border-cream-300 dark:border-charcoal-750 rounded-3xl p-6 sm:p-8 shadow-elevated">
+          <div className="bg-white dark:bg-charcoal-850 rounded-3xl border border-cream-300 dark:border-charcoal-750 p-6 sm:p-8 shadow-card-light dark:shadow-card-dark transition-colors">
             
-            {/* Header & Tabs */}
+            {/* Header Tabs (Login / Signup) */}
             <div className="mb-6">
               {mode === 'forgot' ? (
-                <div className="flex items-center gap-2 mb-2">
-                  <button
-                    onClick={() => switchMode('login')}
-                    className="p-1 rounded-lg text-charcoal-500 hover:text-charcoal-900 dark:hover:text-white transition-colors cursor-pointer"
-                  >
-                    <ChevronLeft className="w-5 h-5" />
-                  </button>
+                <div className="border-b border-cream-200 dark:border-charcoal-800 pb-3">
                   <h2 className="text-xl font-black text-charcoal-950 dark:text-white tracking-tight">
-                    Reset Password
+                    Reset Your Password
                   </h2>
+                  <p className="text-xs text-charcoal-500 dark:text-charcoal-400 mt-0.5">
+                    Enter your email to receive recovery instructions
+                  </p>
                 </div>
               ) : (
                 <div className="flex items-center justify-between mb-4 border-b border-cream-200 dark:border-charcoal-800 pb-3">
@@ -330,6 +343,21 @@ const AuthView = ({ initialMode = 'login', onBackToLanding }) => {
               <div className="mb-4 p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs flex items-start gap-2 animate-fade-in font-medium">
                 <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
                 <span className="leading-relaxed">{successMsg}</span>
+              </div>
+            )}
+
+            {/* Email Pending One-Click Demo Callout */}
+            {isEmailPending && (
+              <div className="mb-4 p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-800 dark:text-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fade-in">
+                <span>Want to test immediately without waiting for email verification?</span>
+                <Button
+                  variant="primary"
+                  size="xs"
+                  onClick={handleInstantDemo}
+                  className="whitespace-nowrap shrink-0"
+                >
+                  Enter Demo Now 🚀
+                </Button>
               </div>
             )}
 
@@ -464,9 +492,9 @@ const AuthView = ({ initialMode = 'login', onBackToLanding }) => {
                     <>
                       <span>
                         {mode === 'login'
-                          ? 'Sign In to Dashboard'
+                          ? 'Sign In with Supabase'
                           : mode === 'signup'
-                          ? 'Create Free Account'
+                          ? 'Create Account'
                           : 'Send Password Reset Link'}
                       </span>
                       <ArrowRight className="w-4 h-4" />
@@ -474,6 +502,24 @@ const AuthView = ({ initialMode = 'login', onBackToLanding }) => {
                   )}
                 </button>
               </div>
+
+              {/* Divider */}
+              <div className="relative my-4 flex items-center justify-center">
+                <div className="border-t border-cream-200 dark:border-charcoal-800 w-full" />
+                <span className="bg-white dark:bg-charcoal-850 px-3 text-[11px] font-bold text-charcoal-400 uppercase tracking-wider absolute">
+                  OR
+                </span>
+              </div>
+
+              {/* Instant Demo Access Button */}
+              <button
+                type="button"
+                onClick={handleInstantDemo}
+                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-cream-100 hover:bg-cream-200 dark:bg-charcoal-800 dark:hover:bg-charcoal-750 text-charcoal-800 dark:text-cream-100 font-bold text-xs border border-cream-300 dark:border-charcoal-700 transition-all cursor-pointer"
+              >
+                <Rocket className="w-4 h-4 text-coral-500" />
+                <span>Continue as Guest (Instant Demo Mode)</span>
+              </button>
             </form>
 
             {/* Bottom switcher */}

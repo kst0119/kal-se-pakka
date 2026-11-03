@@ -205,6 +205,8 @@ const Sidebar = ({ isMobileOpen, setIsMobileOpen }) => {
                   ? 'bg-lime-500'
                   : cloudSyncStatus === 'syncing'
                   ? 'bg-amber-400 animate-pulse'
+                  : cloudSyncStatus === 'local'
+                  ? 'bg-coral-400'
                   : 'bg-rose-400'
               }`}
             />
@@ -213,6 +215,8 @@ const Sidebar = ({ isMobileOpen, setIsMobileOpen }) => {
                 ? 'Cloud Synced'
                 : cloudSyncStatus === 'syncing'
                 ? 'Syncing...'
+                : cloudSyncStatus === 'local'
+                ? 'Local / Demo Active'
                 : 'Supabase Active'}
             </span>
           </div>

@@ -27,12 +27,15 @@ import {
   Moon,
   Binary,
   Code2,
+  Rocket,
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext';
 import Button from '../common/Button';
 
 const LandingPage = ({ onOpenAuth }) => {
   const { theme, toggleTheme, isDark } = useTheme();
+  const { loginAsGuest } = useAuth();
 
   return (
     <div className="min-h-screen bg-cream-100 dark:bg-charcoal-900 text-charcoal-900 dark:text-cream-50 transition-colors duration-200">
@@ -71,6 +74,15 @@ const LandingPage = ({ onOpenAuth }) => {
               aria-label="Toggle theme"
             >
               {isDark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-charcoal-700" />}
+            </button>
+
+            {/* Instant Demo CTA */}
+            <button
+              onClick={() => loginAsGuest('College Scholar')}
+              className="hidden sm:inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-coral-600 dark:text-coral-400 hover:underline px-3 py-2 cursor-pointer"
+            >
+              <Rocket className="w-3.5 h-3.5" />
+              <span>Instant Demo</span>
             </button>
 
             {/* Login CTA */}
@@ -127,12 +139,23 @@ const LandingPage = ({ onOpenAuth }) => {
           </Button>
 
           <Button
+            variant="lime"
+            size="lg"
+            onClick={() => loginAsGuest('College Scholar')}
+            icon={Rocket}
+            iconPosition="left"
+            className="w-full sm:w-auto shadow-lime-glow"
+          >
+            Instant Demo Access
+          </Button>
+
+          <Button
             variant="secondary"
             size="lg"
             onClick={() => onOpenAuth('login')}
             className="w-full sm:w-auto"
           >
-            Open Existing Dashboard
+            Sign In with Supabase
           </Button>
         </div>
 
@@ -363,16 +386,26 @@ const LandingPage = ({ onOpenAuth }) => {
           <p className="text-sm sm:text-base text-charcoal-600 dark:text-charcoal-300 max-w-xl mx-auto">
             Join students who have stopped postponing and started executing. Free, open source, and built for college life.
           </p>
-          <div>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <Button
               variant="primary"
               size="lg"
               onClick={() => onOpenAuth('signup')}
               icon={ArrowRight}
               iconPosition="right"
-              className="shadow-coral-glow"
+              className="shadow-coral-glow w-full sm:w-auto"
             >
               Create Your Free Account Now
+            </Button>
+            <Button
+              variant="lime"
+              size="lg"
+              onClick={() => loginAsGuest('College Scholar')}
+              icon={Rocket}
+              iconPosition="left"
+              className="w-full sm:w-auto shadow-lime-glow"
+            >
+              Instant Demo Access
             </Button>
           </div>
         </div>

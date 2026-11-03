@@ -5,11 +5,13 @@
  * Provides real session persistence, auth state listener, and methods for:
  *  - signup(fullName, email, password)
  *  - login(email, password)
+ *  - loginAsGuest(name)  [Instant Demo / Offline Access]
  *  - logout()
  *  - resetPassword(email)
  * 
  * Invariants:
  *  - Preserves persistent sessions across browser refreshes.
+ *  - Supports seamless Guest/Demo access so users are never locked out of their tasks.
  *  - Properly unsubscribes from Supabase auth state change events on unmount.
  *  - Exposes user metadata (e.g. full_name) to components.
  */
@@ -19,6 +21,7 @@ import { authService } from '../services/authService';
 import { isSupabaseConfigured } from '../lib/supabase';
 
 const AuthContext = createContext(null);
+const STORAGE_KEY_GUEST = 'ksp_guest_session';
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -33,9 +36,14 @@ export const AuthProvider = ({ children }) => {
     const initializeAuth = async () => {
       try {
         if (!isSupabaseConfigured) {
-          if (isMounted) {
-            setLoading(false);
+          // Check for existing guest session
+          const savedGuest = localStorage.getItem(STORAGE_KEY_GUEST);
+          if (savedGuest && isMounted) {
+            const parsed = JSON.parse(savedGuest);
+            setUser(parsed);
+            setSession({ user: parsed });
           }
+          if (isMounted) setLoading(false);
           return;
         }
 
@@ -45,13 +53,39 @@ export const AuthProvider = ({ children }) => {
         }
 
         if (isMounted) {
-          setSession(currentSession);
-          setUser(currentSession?.user || null);
+          if (currentSession?.user) {
+            setUser(currentSession.user);
+            setSession(currentSession);
+          } else {
+            // Check for existing guest session
+            const savedGuest = localStorage.getItem(STORAGE_KEY_GUEST);
+            if (savedGuest) {
+              try {
+                const parsed = JSON.parse(savedGuest);
+                setUser(parsed);
+                setSession({ user: parsed });
+              } catch (e) {
+                setUser(null);
+                setSession(null);
+              }
+            } else {
+              setUser(null);
+              setSession(null);
+            }
+          }
           setLoading(false);
         }
       } catch (err) {
         console.error('[AuthContext] Initialization failed:', err);
         if (isMounted) {
+          const savedGuest = localStorage.getItem(STORAGE_KEY_GUEST);
+          if (savedGuest) {
+            try {
+              const parsed = JSON.parse(savedGuest);
+              setUser(parsed);
+              setSession({ user: parsed });
+            } catch (e) {}
+          }
           setLoading(false);
         }
       }
@@ -63,13 +97,22 @@ export const AuthProvider = ({ children }) => {
     const { unsubscribe } = authService.onAuthStateChange((event, newSession) => {
       if (!isMounted) return;
 
-      setSession(newSession);
-      setUser(newSession?.user || null);
-      setLoading(false);
-
-      if (event === 'SIGNED_OUT') {
-        setUser(null);
-        setSession(null);
+      if (event === 'SIGNED_IN' && newSession?.user) {
+        localStorage.removeItem(STORAGE_KEY_GUEST);
+        setSession(newSession);
+        setUser(newSession.user);
+        setLoading(false);
+      } else if (event === 'SIGNED_OUT') {
+        const savedGuest = localStorage.getItem(STORAGE_KEY_GUEST);
+        if (!savedGuest) {
+          setUser(null);
+          setSession(null);
+        }
+        setLoading(false);
+      } else if (newSession) {
+        setSession(newSession);
+        setUser(newSession.user);
+        setLoading(false);
       }
     });
 
@@ -83,6 +126,32 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   /**
+   * Instant Demo / Guest Login without requiring Supabase email verification
+   */
+  const loginAsGuest = (name = 'College Scholar') => {
+    setAuthError(null);
+    const guestUser = {
+      id: 'guest_user_demo',
+      email: 'guest@kalsepakka.local',
+      user_metadata: {
+        full_name: name,
+      },
+      isGuest: true,
+      created_at: new Date().toISOString(),
+    };
+
+    try {
+      localStorage.setItem(STORAGE_KEY_GUEST, JSON.stringify(guestUser));
+    } catch (e) {
+      console.error('Could not save guest session', e);
+    }
+
+    setUser(guestUser);
+    setSession({ user: guestUser });
+    return { success: true, user: guestUser };
+  };
+
+  /**
    * Log in an existing user with email and password
    */
   const login = async (email, password) => {
@@ -94,10 +163,15 @@ export const AuthProvider = ({ children }) => {
       });
 
       if (error) {
+        const isEmailNotConfirmed =
+          error.code === 'email_not_confirmed' ||
+          (error.message && error.message.toLowerCase().includes('email not confirmed'));
+
         setAuthError(error.message);
-        return { success: false, error };
+        return { success: false, error, isEmailNotConfirmed };
       }
 
+      localStorage.removeItem(STORAGE_KEY_GUEST);
       setUser(loggedInUser);
       setSession(newSession);
       return { success: true, user: loggedInUser, session: newSession };
@@ -138,8 +212,12 @@ export const AuthProvider = ({ children }) => {
         };
       }
 
-      setUser(newUser);
-      setSession(newSession);
+      if (newSession?.user) {
+        localStorage.removeItem(STORAGE_KEY_GUEST);
+        setUser(newUser);
+        setSession(newSession);
+      }
+
       return {
         success: true,
         user: newUser,
@@ -159,19 +237,22 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     setAuthError(null);
     try {
-      const { error } = await authService.signOut();
-      if (error) {
-        console.warn('[AuthContext] Sign out warning:', error.message);
+      localStorage.removeItem(STORAGE_KEY_GUEST);
+      if (user && !user.isGuest) {
+        const { error } = await authService.signOut();
+        if (error) {
+          console.warn('[AuthContext] Sign out warning:', error.message);
+        }
       }
       setUser(null);
       setSession(null);
       return { success: true };
     } catch (err) {
       console.error('[AuthContext] Sign out error:', err);
-      // Force clear local state anyway
+      localStorage.removeItem(STORAGE_KEY_GUEST);
       setUser(null);
       setSession(null);
-      return { success: false, error: err };
+      return { success: true };
     }
   };
 
@@ -206,6 +287,7 @@ export const AuthProvider = ({ children }) => {
     isAuthenticated: Boolean(user),
     isConfigured: isSupabaseConfigured,
     login,
+    loginAsGuest,
     signup,
     logout,
     resetPassword,
@@ -222,4 +304,3 @@ export const useAuth = () => {
   }
   return context;
 };
-

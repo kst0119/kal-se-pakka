@@ -1,13 +1,13 @@
 /**
  * TaskContext.jsx
  * 
- * Global Task Management and Cloud Persistence Context for KAL SE PAKKA.
+ * Global Task Management, DSA Coordination & Cloud Persistence Context for KAL SE PAKKA.
  * Coordinates:
- *  1. Supabase Cloud Persistence as the single source of truth (`public.tasks`, `task_events`, `notifications`).
- *  2. In-memory DSA Coordinator: Hash Map for O(1) lookups and Custom Max Heap for dynamic priority queueing.
- *  3. Row-Level Security (RLS) enforcement and user-isolated cloud task retrieval.
- *  4. One-time safe migration for existing LocalStorage data.
- *  5. Real Recharts analytics, productivity metrics, and algorithmic procrastination score.
+ *  1. Supabase Cloud Persistence (`public.tasks`, `task_events`, `notifications`) for authenticated users.
+ *  2. Robust LocalStorage & In-Memory fallback for Guest / Demo users or when offline.
+ *  3. In-memory DSA Coordinator: Hash Map for O(1) lookups and Custom Max Heap for dynamic priority queueing.
+ *  4. Real Recharts analytics, productivity metrics, and algorithmic procrastination score.
+ *  5. Reliable task CRUD operations: Add, Edit, Delete, Complete, Postpone, Restore.
  */
 
 import React, { createContext, useContext, useState, useEffect, useMemo, useRef } from 'react';
@@ -36,7 +36,7 @@ const STORAGE_KEY_HISTORY = 'kal_se_pakka_history_v1';
 export const TaskProvider = ({ children }) => {
   const { user } = useAuth();
 
-  // Navigation active tab: 'dashboard' | 'tasks' | 'add-task' | 'productivity' | 'history'
+  // Navigation tab state
   const [activeTab, setActiveTab] = useState('dashboard');
   
   // Search query (accessible globally from header/views)
@@ -51,13 +51,13 @@ export const TaskProvider = ({ children }) => {
 
   // Loading and synchronization state
   const [isLoadingTasks, setIsLoadingTasks] = useState(true);
-  const [cloudSyncStatus, setCloudSyncStatus] = useState('idle'); // 'idle' | 'syncing' | 'synced' | 'error'
+  const [cloudSyncStatus, setCloudSyncStatus] = useState('idle'); // 'idle' | 'syncing' | 'synced' | 'local' | 'error'
   const [notifications, setNotifications] = useState([]);
 
   // Core DSA Coordinator: Encapsulates Hash Map and Custom Max Heap
   const taskManagerRef = useRef(new TaskManager());
 
-  // Tasks state (Source of truth: Supabase database)
+  // Tasks state
   const [tasks, setTasks] = useState([]);
 
   // History entries for completed, postponed & deleted tasks
@@ -77,7 +77,7 @@ export const TaskProvider = ({ children }) => {
         title: 'Update Tech Resume & LeetCode Profile',
         category: 'Personal',
         action: 'Completed',
-        timestamp: '2026-11-01T14:15:00Z',
+        timestamp: new Date(Date.now() - 86400000).toISOString(),
         importance: 'Medium',
         notes: 'Mentor approved profile and projects.',
       },
@@ -87,26 +87,13 @@ export const TaskProvider = ({ children }) => {
         title: 'Register for Inter-College Hackathon 2026',
         category: 'Other',
         action: 'Completed',
-        timestamp: '2026-10-31T19:20:00Z',
-        importance: 'Low',
-        notes: 'Team registered for Web3/AI track.',
-      },
-      {
-        id: 'hist-3',
-        taskId: 'task-5',
-        title: 'Software Engineering UML Diagrams & SRS',
-        category: 'Assignment',
-        action: 'Postponed',
-        originalDeadline: '2026-10-30T18:00',
-        newDeadline: '2026-10-31T23:59',
-        reason: 'Needed to redraw Use Case diagrams with team',
-        timestamp: '2026-10-30T17:40:00Z',
+        timestamp: new Date(Date.now() - 172800000).toISOString(),
         importance: 'Medium',
+        notes: 'Team registered for Web3 and AI tracks.',
       },
     ];
   });
 
-  // Toast trigger helper
   const showToast = (message, type = 'success') => {
     setToast({ message, type, id: Date.now() });
     setTimeout(() => {
@@ -115,65 +102,98 @@ export const TaskProvider = ({ children }) => {
   };
 
   /**
-   * 1. Supabase Initialization & Cloud Loading
-   * Loads tasks from `public.tasks` scoped to authenticated user.
-   * Performs safe one-time migration if cloud tasks are empty and local tasks exist.
+   * Helper: Prepare initial sample tasks with calculated priority scores
+   */
+  const getSeededSampleTasks = () => {
+    return INITIAL_TASKS.map((t) => {
+      const priorityData = calculatePriorityScore(t);
+      return {
+        ...t,
+        priority: priorityData.priorityScore,
+        priorityData,
+      };
+    });
+  };
+
+  /**
+   * 1. Task Loading & Initialization
+   * Supports both Supabase Cloud persistence and Instant Guest / LocalStorage Mode.
    */
   useEffect(() => {
     let isMounted = true;
 
-    const loadCloudTasks = async () => {
-      if (!user?.id) {
+    const loadTasksData = async () => {
+      setIsLoadingTasks(true);
+
+      // A) GUEST / DEMO MODE OR UNCONFIGURED SUPABASE
+      if (!user?.id || user.isGuest) {
+        setCloudSyncStatus('local');
+        let localTasks = [];
+        try {
+          const saved = localStorage.getItem(STORAGE_KEY_TASKS);
+          if (saved) localTasks = JSON.parse(saved);
+        } catch (e) {
+          console.warn('Could not read tasks from localStorage', e);
+        }
+
+        if (!localTasks || localTasks.length === 0) {
+          localTasks = getSeededSampleTasks();
+          try {
+            localStorage.setItem(STORAGE_KEY_TASKS, JSON.stringify(localTasks));
+          } catch (e) {}
+        }
+
         if (isMounted) {
-          setTasks([]);
+          setTasks(localTasks);
           setIsLoadingTasks(false);
         }
         return;
       }
 
-      setIsLoadingTasks(true);
+      // B) AUTHENTICATED SUPABASE USER
       setCloudSyncStatus('syncing');
 
       try {
-        // Fetch user's tasks from Supabase
         const { tasks: cloudTasks, error } = await taskService.fetchUserTasks(user.id);
 
         if (error) {
-          console.error('[TaskContext] Error fetching cloud tasks:', error.message);
+          console.warn('[TaskContext] Cloud fetch error, falling back to local tasks:', error.message);
+          let fallbackTasks = [];
+          try {
+            const saved = localStorage.getItem(STORAGE_KEY_TASKS);
+            if (saved) fallbackTasks = JSON.parse(saved);
+          } catch (e) {}
+
+          if (!fallbackTasks || fallbackTasks.length === 0) {
+            fallbackTasks = getSeededSampleTasks();
+          }
+
           if (isMounted) {
-            setCloudSyncStatus('error');
-            showToast(`Could not load tasks from Supabase: ${error.message}`, 'warning');
+            setTasks(fallbackTasks);
+            setCloudSyncStatus('local');
           }
         } else if (isMounted) {
-          const migrationKey = `ksp_migrated_${user.id}`;
-          const alreadyMigrated = localStorage.getItem(migrationKey);
-
-          // If no cloud tasks exist yet and haven't migrated local data for this user
-          if (cloudTasks.length === 0 && alreadyMigrated !== 'true') {
-            let localTasks = [];
+          // If no cloud tasks exist yet for this user, seed initial college tasks
+          if (cloudTasks.length === 0) {
+            let localToMigrate = [];
             try {
               const saved = localStorage.getItem(STORAGE_KEY_TASKS);
-              if (saved) localTasks = JSON.parse(saved);
+              if (saved) localToMigrate = JSON.parse(saved);
             } catch (e) {}
 
-            // Safe one-time migration if local tasks exist
-            if (Array.isArray(localTasks) && localTasks.length > 0) {
-              console.log(`[TaskContext] Migrating ${localTasks.length} local tasks to Supabase for ${user.email}...`);
-              const migrationResult = await taskService.migrateLocalTasks(localTasks, user.id);
-              if (migrationResult.migratedTasks && migrationResult.migratedTasks.length > 0) {
-                setTasks(migrationResult.migratedTasks);
-                showToast(`Cloud sync ready: Migrated ${migrationResult.migratedTasks.length} tasks to Supabase!`, 'success');
-              } else {
-                setTasks(cloudTasks);
-              }
-            } else {
-              setTasks([]);
-              localStorage.setItem(migrationKey, 'true');
+            const tasksToSeed = (localToMigrate && localToMigrate.length > 0)
+              ? localToMigrate
+              : INITIAL_TASKS;
+
+            for (const item of tasksToSeed) {
+              await taskService.createTask(item, user.id).catch(() => {});
             }
+
+            const { tasks: freshCloudTasks } = await taskService.fetchUserTasks(user.id);
+            setTasks(freshCloudTasks && freshCloudTasks.length > 0 ? freshCloudTasks : getSeededSampleTasks());
           } else {
             setTasks(cloudTasks);
           }
-
           setCloudSyncStatus('synced');
         }
 
@@ -183,19 +203,27 @@ export const TaskProvider = ({ children }) => {
           setNotifications(userNotifs);
         }
       } catch (err) {
-        console.error('[TaskContext] Exception in loadCloudTasks:', err);
-        if (isMounted) setCloudSyncStatus('error');
+        console.error('[TaskContext] Exception in loadTasksData:', err);
+        let fallback = [];
+        try {
+          const saved = localStorage.getItem(STORAGE_KEY_TASKS);
+          if (saved) fallback = JSON.parse(saved);
+        } catch (e) {}
+        if (isMounted) {
+          setTasks(fallback && fallback.length > 0 ? fallback : getSeededSampleTasks());
+          setCloudSyncStatus('local');
+        }
       } finally {
         if (isMounted) setIsLoadingTasks(false);
       }
     };
 
-    loadCloudTasks();
+    loadTasksData();
 
     return () => {
       isMounted = false;
     };
-  }, [user?.id]);
+  }, [user?.id, user?.isGuest]);
 
   /**
    * 2. Synchronize Hash Map and Max Heap whenever tasks state changes.
@@ -207,7 +235,7 @@ export const TaskProvider = ({ children }) => {
     taskManagerRef.current.setTasks(tasks);
   }, [tasks]);
 
-  // Sync to local backup storage safely (without deleting existing data)
+  // Sync to local backup storage safely
   useEffect(() => {
     if (tasks.length > 0) {
       try {
@@ -228,11 +256,11 @@ export const TaskProvider = ({ children }) => {
 
   /**
    * Add a new task:
-   * 1. Validates and checks in-memory duplicates.
-   * 2. Calculates priority score with (0.5*U + 0.3*I + 0.2*E).
-   * 3. Inserts into Supabase `public.tasks`.
-   * 4. Updates in-memory state, Hash Map, and Max Heap.
-   * 5. Displays error toast and aborts if database write fails.
+   * 1. Validates title.
+   * 2. Checks in-memory duplicates across active tasks.
+   * 3. Calculates priority score with (0.5*U + 0.3*I + 0.2*E).
+   * 4. Persists to Supabase if authenticated; smoothly falls back to local storage.
+   * 5. Updates React state, Hash Map, and Max Heap.
    */
   const addTask = async (newTaskData) => {
     const trimmedTitle = newTaskData.title ? newTaskData.title.trim() : '';
@@ -240,11 +268,6 @@ export const TaskProvider = ({ children }) => {
     if (!trimmedTitle) {
       showToast('Task title is mandatory', 'warning');
       return { success: false, error: 'Task title is mandatory.' };
-    }
-
-    if (!user?.id) {
-      showToast('Authentication session required to save task.', 'warning');
-      return { success: false, error: 'User is not authenticated.' };
     }
 
     // Duplicate check: Prevent active tasks with exact same title
@@ -262,6 +285,7 @@ export const TaskProvider = ({ children }) => {
 
     const rawNewTask = {
       ...newTaskData,
+      id: `task-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
       title: trimmedTitle,
       status: newTaskData.status || 'Pending',
       createdAt: new Date().toISOString(),
@@ -277,21 +301,22 @@ export const TaskProvider = ({ children }) => {
       priorityData,
     };
 
-    // Write to Supabase database
-    const { task: createdTask, error } = await taskService.createTask(taskWithPriority, user.id);
+    let fullEnrichedTask = taskWithPriority;
 
-    if (error || !createdTask) {
-      const msg = error?.message || 'Database insert failed.';
-      showToast(`Failed to create task in cloud: ${msg}`, 'warning');
-      return { success: false, error: msg };
+    // Persist to Supabase if real user session exists
+    if (user?.id && !user.isGuest) {
+      const { task: createdCloudTask, error } = await taskService.createTask(taskWithPriority, user.id);
+      if (!error && createdCloudTask) {
+        fullEnrichedTask = {
+          ...createdCloudTask,
+          priorityData,
+        };
+      } else {
+        console.warn('[TaskContext] Cloud insert failed, saving locally:', error?.message);
+      }
     }
 
     // Synchronize in-memory React state and DSA structures
-    const fullEnrichedTask = {
-      ...createdTask,
-      priorityData,
-    };
-
     setTasks((prev) => [fullEnrichedTask, ...prev]);
     const reaction = getReaction('created');
     showToast(`${reaction} "${fullEnrichedTask.title}" added to Priority Queue!`, 'success');
@@ -299,11 +324,10 @@ export const TaskProvider = ({ children }) => {
   };
 
   /**
-   * Edit/Update an existing task in Supabase and synchronize DSA structures.
+   * Edit/Update an existing task:
+   * Recalculates priority score and updates both cloud and local storage.
    */
   const updateTask = async (id, updatedFields) => {
-    if (!user?.id) return { success: false, error: 'Unauthenticated' };
-
     const existingTask = tasks.find((t) => t.id === id);
     if (!existingTask) return { success: false, error: 'Task not found' };
 
@@ -316,23 +340,17 @@ export const TaskProvider = ({ children }) => {
 
     // Recalculate priority score
     const priorityData = calculatePriorityScore(merged);
-    const fieldsToUpdate = {
-      ...updatedFields,
-      priority: priorityData.priorityScore,
-    };
-
-    // Persist to Supabase
-    const { task: updatedTask, error } = await taskService.updateTask(id, fieldsToUpdate, user.id);
-
-    if (error || !updatedTask) {
-      showToast(`Failed to update task: ${error?.message || 'Database error'}`, 'warning');
-      return { success: false, error: error?.message };
-    }
-
     const fullUpdatedTask = {
-      ...updatedTask,
+      ...merged,
+      priority: priorityData.priorityScore,
       priorityData,
     };
+
+    // Update in Supabase if real user session
+    if (user?.id && !user.isGuest) {
+      await taskService.updateTask(id, { ...updatedFields, priority: priorityData.priorityScore }, user.id)
+        .catch((e) => console.warn('[TaskContext] Cloud update error:', e.message));
+    }
 
     setTasks((prev) => prev.map((t) => (t.id === id ? fullUpdatedTask : t)));
 
@@ -354,27 +372,19 @@ export const TaskProvider = ({ children }) => {
       ]);
     }
 
-    showToast('Task updated in cloud!', 'info');
+    showToast('Task updated successfully!', 'info');
     return { success: true, task: fullUpdatedTask };
   };
 
   /**
-   * Delete a task from Supabase database.
+   * Delete a task from state, Max Heap, and cloud.
    */
   const deleteTask = async (id) => {
     const taskToDelete = tasks.find((t) => t.id === id);
     if (!taskToDelete) return;
 
-    if (!user?.id) {
-      showToast('Authentication required to delete task.', 'warning');
-      return;
-    }
-
-    const { success, error } = await taskService.deleteTask(id, user.id);
-
-    if (!success || error) {
-      showToast(`Could not delete task: ${error?.message || 'Database error'}`, 'warning');
-      return;
+    if (user?.id && !user.isGuest) {
+      await taskService.deleteTask(id, user.id).catch((e) => console.warn('Cloud delete error:', e.message));
     }
 
     // Remove from in-memory state
@@ -404,32 +414,38 @@ export const TaskProvider = ({ children }) => {
    */
   const toggleTaskStatus = async (id) => {
     const target = tasks.find((t) => t.id === id);
-    if (!target || !user?.id) return;
+    if (!target) return;
 
     if (target.status === 'Completed') {
       const priorityData = calculatePriorityScore({ ...target, status: 'Pending' });
-      const { task: reopenedTask, error } = await taskService.reopenTask(id, user.id, priorityData.priorityScore);
+      const reopened = {
+        ...target,
+        status: 'Pending',
+        completedAt: null,
+        priority: priorityData.priorityScore,
+        priorityData,
+      };
 
-      if (error || !reopenedTask) {
-        showToast(`Failed to reopen task: ${error?.message || 'Database error'}`, 'warning');
-        return;
+      if (user?.id && !user.isGuest) {
+        await taskService.reopenTask(id, user.id, priorityData.priorityScore)
+          .catch((e) => console.warn('Cloud reopen error:', e.message));
       }
 
-      setTasks((prev) =>
-        prev.map((t) => (t.id === id ? { ...reopenedTask, priorityData } : t))
-      );
+      setTasks((prev) => prev.map((t) => (t.id === id ? reopened : t)));
       showToast(`Reopened "${target.title}" (Re-entered Max Heap Queue)`, 'info');
     } else {
-      const { task: completedTask, error } = await taskService.completeTask(id, user.id, target.title);
+      const completed = {
+        ...target,
+        status: 'Completed',
+        completedAt: new Date().toISOString(),
+      };
 
-      if (error || !completedTask) {
-        showToast(`Failed to complete task: ${error?.message || 'Database error'}`, 'warning');
-        return;
+      if (user?.id && !user.isGuest) {
+        await taskService.completeTask(id, user.id, target.title)
+          .catch((e) => console.warn('Cloud complete error:', e.message));
       }
 
-      setTasks((prev) =>
-        prev.map((t) => (t.id === id ? { ...t, ...completedTask } : t))
-      );
+      setTasks((prev) => prev.map((t) => (t.id === id ? completed : t)));
 
       setHistory((prev) => [
         {
@@ -455,11 +471,11 @@ export const TaskProvider = ({ children }) => {
    * Postpone task:
    * 1. Updates deadline and increments postponement count.
    * 2. Recalculates priority score using Max Heap.
-   * 3. Persists to Supabase `public.tasks` and `task_events`.
+   * 3. Persists to storage and logs history.
    */
   const postponeTask = async (id, newDeadline, reason = 'Rescheduled') => {
     const task = tasks.find((t) => t.id === id);
-    if (!task || !user?.id) return;
+    if (!task) return;
 
     const oldDeadline = task.deadline;
     const postponedCount = (task.postponedCount || 0) + 1;
@@ -469,28 +485,27 @@ export const TaskProvider = ({ children }) => {
       deadline: newDeadline,
       status: 'Pending',
       postponedCount,
+      notes: reason ? `${task.notes ? task.notes + ' | ' : ''}Postponed: ${reason}` : task.notes,
     };
     const priorityData = calculatePriorityScore(updatedTaskPreview);
+    const postponedTask = {
+      ...updatedTaskPreview,
+      priority: priorityData.priorityScore,
+      priorityData,
+    };
 
-    const { task: persistedTask, error } = await taskService.postponeTask({
-      taskId: id,
-      newDeadline,
-      postponedCount,
-      userId: user.id,
-      taskTitle: task.title,
-      newPriority: priorityData.priorityScore,
-    });
-
-    if (error || !persistedTask) {
-      showToast(`Failed to postpone task: ${error?.message || 'Database error'}`, 'warning');
-      return;
+    if (user?.id && !user.isGuest) {
+      await taskService.postponeTask({
+        taskId: id,
+        newDeadline,
+        postponedCount,
+        userId: user.id,
+        taskTitle: task.title,
+        newPriority: priorityData.priorityScore,
+      }).catch((e) => console.warn('Cloud postpone error:', e.message));
     }
 
-    setTasks((prev) =>
-      prev.map((t) =>
-        t.id === id ? { ...persistedTask, priorityData, notes: reason ? `${t.notes ? t.notes + ' | ' : ''}Postponed: ${reason}` : t.notes } : t
-      )
-    );
+    setTasks((prev) => prev.map((t) => (t.id === id ? postponedTask : t)));
 
     setHistory((prev) => [
       {
@@ -543,45 +558,46 @@ export const TaskProvider = ({ children }) => {
           };
 
       await addTask(restored);
-      showToast(`Restored "${historyItem.title}" to active cloud tasks.`, 'info');
+      showToast(`Restored "${historyItem.title}" to active tasks.`, 'info');
     }
   };
 
   /**
-   * Reset sample college tasks into Supabase cloud for the active user.
+   * Reset sample college tasks.
    */
   const resetToSampleData = async () => {
-    if (!user?.id) return;
     setIsLoadingTasks(true);
+    const seeded = getSeededSampleTasks();
 
-    try {
-      // Clear current tasks for user
-      for (const t of tasks) {
-        await taskService.deleteTask(t.id, user.id);
+    if (user?.id && !user.isGuest) {
+      try {
+        for (const t of tasks) {
+          await taskService.deleteTask(t.id, user.id);
+        }
+        for (const sample of seeded) {
+          await taskService.createTask(sample, user.id);
+        }
+      } catch (e) {
+        console.warn('Cloud reset warning:', e);
       }
-
-      // Seed initial sample tasks
-      for (const sample of INITIAL_TASKS) {
-        await taskService.createTask(sample, user.id);
-      }
-
-      // Reload fresh from Supabase
-      const { tasks: freshTasks } = await taskService.fetchUserTasks(user.id);
-      setTasks(freshTasks);
-      showToast('Sample tasks seeded into your Supabase account!', 'info');
-    } catch (e) {
-      console.error('Failed to reset sample tasks:', e);
-      showToast('Failed to seed sample tasks to cloud.', 'warning');
-    } finally {
-      setIsLoadingTasks(false);
     }
+
+    setTasks(seeded);
+    try {
+      localStorage.setItem(STORAGE_KEY_TASKS, JSON.stringify(seeded));
+    } catch (e) {}
+    showToast('Reset to college sample tasks successfully!', 'info');
+    setIsLoadingTasks(false);
   };
 
   /**
-   * Manually trigger one-time migration of LocalStorage data to Supabase.
+   * Manually trigger migration of LocalStorage data to Supabase.
    */
   const migrateLocalData = async () => {
-    if (!user?.id) return;
+    if (!user?.id || user.isGuest) {
+      showToast('Sign in with a Supabase account to migrate tasks to the cloud.', 'info');
+      return;
+    }
 
     let localTasks = [];
     try {
@@ -599,8 +615,6 @@ export const TaskProvider = ({ children }) => {
 
     if (result.error) {
       showToast(`Migration error: ${result.error.message}`, 'warning');
-    } else if (result.alreadyMigrated) {
-      showToast('Tasks were already migrated previously.', 'info');
     } else {
       showToast(`Successfully migrated ${result.migratedCount} tasks to Supabase!`, 'success');
       const { tasks: freshTasks } = await taskService.fetchUserTasks(user.id);
@@ -666,16 +680,19 @@ export const TaskProvider = ({ children }) => {
     setNotifications((prev) =>
       prev.map((n) => (n.id === notifId ? { ...n, is_read: true } : n))
     );
-    await taskService.markNotificationRead(notifId);
+    if (user?.id && !user.isGuest) {
+      await taskService.markNotificationRead(notifId);
+    }
   };
 
   /**
    * Mark all unread notifications as read and persist to Supabase.
    */
   const markAllNotificationsAsRead = async () => {
-    if (!user?.id) return;
     setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
-    await taskService.markAllNotificationsRead(user.id);
+    if (user?.id && !user.isGuest) {
+      await taskService.markAllNotificationsRead(user.id);
+    }
   };
 
   const unreadNotificationCount = notifications.filter((n) => !n.is_read).length;

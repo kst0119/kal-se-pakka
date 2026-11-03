@@ -24,6 +24,8 @@ const Button = ({
   const variantStyles = {
     primary:
       'bg-coral-500 hover:bg-coral-600 text-white shadow-coral-glow focus:ring-coral-500 border border-coral-400/30',
+    purple:
+      'bg-coral-500 hover:bg-coral-600 text-white shadow-coral-glow focus:ring-coral-500 border border-coral-400/30',
     lime:
       'bg-lime-400 hover:bg-lime-500 text-charcoal-950 font-extrabold shadow-lime-glow focus:ring-lime-400 border border-lime-500/30',
     secondary:
@@ -41,8 +43,8 @@ const Button = ({
   return (
     <button
       type={type}
-      onClick={onClick}
       disabled={disabled}
+      onClick={disabled ? undefined : onClick}
       className={`${baseStyles} ${sizeStyles[size] || sizeStyles.md} ${variantStyles[variant] || variantStyles.primary} ${className}`}
       {...props}
     >
